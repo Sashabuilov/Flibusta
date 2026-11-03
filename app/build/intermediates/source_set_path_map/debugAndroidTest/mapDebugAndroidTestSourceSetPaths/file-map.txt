@@ -1,0 +1,4 @@
+ru.flibusta.app.test.app-androidTest-0 /Users/aleksandr/Downloads/Programming/Flibusta/app/build/generated/res/resValues/androidTest/debug
+ru.flibusta.app.test.app-mergeDebugAndroidTestResources-1 /Users/aleksandr/Downloads/Programming/Flibusta/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
+ru.flibusta.app.test.app-mergeDebugAndroidTestResources-2 /Users/aleksandr/Downloads/Programming/Flibusta/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
+ru.flibusta.app.test.app-debugAndroidTest-3 /Users/aleksandr/Downloads/Programming/Flibusta/app/build/intermediates/merged_res/debugAndroidTest/mergeDebugAndroidTestResources

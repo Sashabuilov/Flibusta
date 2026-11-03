@@ -1,0 +1,53 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="ru.flibusta.app"
+4    android:versionCode="1"
+5    android:versionName="0.0.1_2026" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="28" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:2:5-67
+11-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:2:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:3:5-79
+12-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:3:22-76
+13
+14    <application
+14-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:4:5-17:19
+15        android:allowBackup="true"
+15-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:5:9-35
+16        android:debuggable="true"
+17        android:extractNativeLibs="false"
+18        android:icon="@mipmap/ic_launcher"
+18-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:7:9-43
+19        android:label="Флибуста"
+19-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:6:9-33
+20        android:roundIcon="@mipmap/ic_launcher"
+20-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:8:9-48
+21        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+21-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:9:9-72
+22        android:usesCleartextTraffic="true" >
+22-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:10:9-44
+23        <activity
+23-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:11:9-16:20
+24            android:name="ru.flibusta.app.MainActivity"
+24-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:11:19-47
+25            android:exported="true" >
+25-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:11:48-71
+26            <intent-filter>
+26-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:12:13-15:29
+27                <action android:name="android.intent.action.MAIN" />
+27-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:13:17-69
+27-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:13:25-66
+28
+29                <category android:name="android.intent.category.LAUNCHER" />
+29-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:14:17-77
+29-->/Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:14:27-74
+30            </intent-filter>
+31        </activity>
+32    </application>
+33
+34</manifest>

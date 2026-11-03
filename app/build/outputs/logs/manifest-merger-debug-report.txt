@@ -1,0 +1,63 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:1:1-18:12
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:1:1-18:12
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:1:1-18:12
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:1:1-18:12
+	package
+		INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:2:5-67
+	android:name
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:2:22-64
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:3:5-79
+	android:name
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:3:22-76
+application
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:4:5-17:19
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:4:5-17:19
+	android:extractNativeLibs
+		INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+	android:label
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:6:9-33
+	android:roundIcon
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:8:9-48
+	android:icon
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:7:9-43
+	android:allowBackup
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:5:9-35
+	android:theme
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:9:9-72
+	android:usesCleartextTraffic
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:10:9-44
+activity#ru.flibusta.app.MainActivity
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:11:9-16:20
+	android:exported
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:11:48-71
+	android:name
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:11:19-47
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:12:13-15:29
+action#android.intent.action.MAIN
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:13:17-69
+	android:name
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:13:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:14:17-77
+	android:name
+		ADDED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml:14:27-74
+uses-sdk
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/aleksandr/Downloads/Programming/Flibusta/app/src/main/AndroidManifest.xml
