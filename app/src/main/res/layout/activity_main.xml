@@ -5,13 +5,18 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
-
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:text="v0.5.0.2026"
+        />
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/queryLayout"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Поиск (название или автор)">
+        android:hint="Поиск">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/query"
@@ -27,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:hint="Тип поиска">
+        android:hint="Критерии поиска">
 
         <AutoCompleteTextView
             android:id="@+id/mode"

@@ -4,18 +4,25 @@ import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.Html;
+import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.inputmethod.InputMethodManager;
-
+import android.graphics.Typeface;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -33,14 +40,12 @@ import org.xmlpull.v1.XmlPullParserFactory;
 
 public class MainActivity extends Activity {
     private static final String BASE = "http://flibusta.is";
-
     private TextInputEditText query;
     private AutoCompleteTextView mode;
     private MaterialButton findButton, resetButton, downloadButton;
     private LinearProgressIndicator progress;
     private TextView connection;
     private LinearLayout resultsBox;
-
     private final List<Book> books = new ArrayList<>();
     private int selected = -1;
     private volatile boolean connected = false;
@@ -64,11 +69,10 @@ public class MainActivity extends Activity {
         connection = findViewById(R.id.connection);
         resultsBox = findViewById(R.id.resultsBox);
 
-        // Настройка выпадающего меню Material 3 (решает проблему невидимости текста)
-        String[] modes = new String[]{"Книги", "Авторы"};
+        String[] modes = new String[]{"По названию", "По автору"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, modes);
         mode.setAdapter(adapter);
-        mode.setText("Книги", false);
+        mode.setText("По названию", false);
 
         findButton.setOnClickListener(v -> search());
         resetButton.setOnClickListener(v -> resetSearch());
@@ -78,15 +82,15 @@ public class MainActivity extends Activity {
     }
 
     private void resetSearch() {
-        query.setText("");
-        resultsBox.removeAllViews();
+        if (query != null) query.setText("");
+        if (resultsBox != null) resultsBox.removeAllViews();
         books.clear();
         selected = -1;
-        downloadButton.setEnabled(false);
-        connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения с каталогом");
+        if (downloadButton != null) downloadButton.setEnabled(false);
+        if (connection != null) connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения с каталогом");
 
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) imm.hideSoftInputFromWindow(query.getWindowToken(), 0);
+        if (imm != null && query != null) imm.hideSoftInputFromWindow(query.getWindowToken(), 0);
     }
 
     private void connectLoop() {
@@ -98,7 +102,7 @@ public class MainActivity extends Activity {
                     HttpURLConnection c = (HttpURLConnection) new URL(BASE + "/opds").openConnection();
                     c.setConnectTimeout(12000);
                     c.setReadTimeout(15000);
-                    c.setRequestProperty("User-Agent", "FlibustaAndroid/0.0.2");
+                    c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
                     int code = c.getResponseCode();
                     if (code >= 200 && code < 400) {
                         InputStream in = c.getInputStream();
@@ -110,8 +114,11 @@ public class MainActivity extends Activity {
 
                 int finalAttempt = attempt;
                 runOnUiThread(() -> {
-                    if (!connected) connection.setText("Попытка подключения... (" + finalAttempt + ")");
-                    else connection.setText("Подключено к flibusta.is");
+                    if (!connected && connection != null) {
+                        connection.setText("Попытка подключения... (" + finalAttempt + ")");
+                    } else if (connection != null) {
+                        connection.setText("Подключено к flibusta.is");
+                    }
                 });
 
                 try { Thread.sleep(Math.min(30000, 1000 * finalAttempt)); } catch (InterruptedException e) { break; }
@@ -120,7 +127,9 @@ public class MainActivity extends Activity {
     }
 
     private void search() {
-        String q = query.getText().toString().trim();
+        if (query == null || mode == null) return;
+
+        String q = query.getText() != null ? query.getText().toString().trim() : "";
         if (q.isEmpty()) {
             query.setError("Введите запрос");
             return;
@@ -142,9 +151,11 @@ public class MainActivity extends Activity {
             List<Book> found = new ArrayList<>();
             String error = null;
             try {
-                String modeText = mode.getText().toString();
+                String modeText = mode.getText() != null ? mode.getText().toString() : "Книги";
                 String type = modeText.contains("Автор") ? "authors" : "books";
-                String url = BASE + "/opds/search?searchTerm=" + URLEncoder.encode(q, "UTF-8") + "&searchType=" + type + "&pageNumber=0";
+                String encodedQuery = URLEncoder.encode(q, "UTF-8");
+                String url = BASE + "/opds/search?searchTerm=" + encodedQuery + "&searchType=" + type + "&pageNumber=0";
+
                 String xml = get(url);
                 if ("authors".equals(type)) {
                     List<String> authorFeeds = parseAuthorFeeds(xml, url);
@@ -164,9 +175,12 @@ public class MainActivity extends Activity {
                 findButton.setEnabled(true);
                 resetButton.setEnabled(true);
                 connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения с каталогом");
-                if (err != null) addMessage("Ошибка поиска: " + err);
-                else if (result.isEmpty()) addMessage("Ничего не найдено.");
-                else {
+
+                if (err != null) {
+                    addMessage("Ошибка: " + err);
+                } else if (result.isEmpty()) {
+                    addMessage("Ничего не найдено.");
+                } else {
                     books.addAll(result);
                     for (int i = 0; i < books.size(); i++) addBookRow(i, books.get(i));
                 }
@@ -176,19 +190,34 @@ public class MainActivity extends Activity {
 
     private String get(String urlString) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(urlString).openConnection();
-        c.setRequestProperty("User-Agent", "FlibustaAndroid/0.0.2");
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
         c.setConnectTimeout(15000);
         c.setReadTimeout(15000);
-        InputStream in = c.getInputStream();
+
+        int responseCode = c.getResponseCode();
+        InputStream in;
+        if (responseCode >= 200 && responseCode < 300) {
+            in = c.getInputStream();
+        } else {
+            in = c.getErrorStream();
+            if (in == null) throw new Exception("Ошибка сервера: код " + responseCode);
+        }
+
         java.util.Scanner s = new java.util.Scanner(in, "UTF-8").useDelimiter("\\A");
         String result = s.hasNext() ? s.next() : "";
         s.close();
         c.disconnect();
+
+        if (result.contains("<html>") || result.contains("<!DOCTYPE html>")) {
+            throw new Exception("Сервер вернул HTML вместо XML (возможна временная блокировка).");
+        }
         return result;
     }
 
     private List<String> parseAuthorFeeds(String xml, String baseUrl) throws Exception {
         List<String> out = new ArrayList<>();
+        if (xml == null || xml.isEmpty()) return out;
+
         XmlPullParser p = XmlPullParserFactory.newInstance().newPullParser();
         p.setInput(new java.io.StringReader(xml));
         while (p.next() != XmlPullParser.END_DOCUMENT) {
@@ -205,6 +234,8 @@ public class MainActivity extends Activity {
 
     private List<Book> parseBooks(String xml, String baseUrl) throws Exception {
         List<Book> out = new ArrayList<>();
+        if (xml == null || xml.isEmpty()) return out;
+
         XmlPullParser p = XmlPullParserFactory.newInstance().newPullParser();
         p.setInput(new java.io.StringReader(xml));
         Book current = null;
@@ -228,7 +259,6 @@ public class MainActivity extends Activity {
                         }
                         if (rel != null && rel.contains("acquisition")) {
                             String lowerType = type == null ? "" : type.toLowerCase();
-                            // ПРИОРИТЕТ EPUB: если формат epub, сохраняем как основной
                             if (lowerType.contains("epub")) {
                                 current.downloadEpub = absolute;
                                 current.mime = lowerType;
@@ -260,56 +290,148 @@ public class MainActivity extends Activity {
     }
 
     private void addMessage(String msg) {
+        if (resultsBox == null) return;
         TextView tv = new TextView(this);
         tv.setText(msg);
         tv.setPadding(32, 32, 32, 32);
-        tv.setTextColor(getColor(android.R.attr.textColorSecondary));
+        tv.setTextColor(Color.parseColor("#757575"));
         resultsBox.addView(tv);
     }
 
-    private void addBookRow(int index, Book b) {
-        MaterialCardView card = new MaterialCardView(this);
-        card.setRadius(16);
-        card.setCheckable(true); // Включаем визуальное выделение
-        card.setChecked(false);
+    // Вспомогательный метод для получения цвета из темы (поддержка темной/светлой темы)
+    private int getThemeColor(int attr) {
+        TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(attr, typedValue, true);
+        return typedValue.data;
+    }
 
-        int[] attrs = {android.R.attr.textColorPrimary, android.R.attr.textColorSecondary};
+    // Вспомогательный метод для конвертации dp в пиксели
+    private int dpToPx(int dp) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    }
+
+    private void addBookRow(int index, Book b) {
+        if (resultsBox == null) return;
+
+        // Надежное получение цветов Material 3 (для светлой и темной темы)
+        int[] attrs = {
+                com.google.android.material.R.attr.colorOnSurface,
+                com.google.android.material.R.attr.colorOnSurfaceVariant,
+                com.google.android.material.R.attr.colorPrimary
+        };
         TypedArray ta = obtainStyledAttributes(attrs);
         int colorPrimary = ta.getColor(0, Color.BLACK);
         int colorSecondary = ta.getColor(1, Color.DKGRAY);
+        int colorAccent = ta.getColor(2, Color.BLUE);
         ta.recycle();
+
+        MaterialCardView card = new MaterialCardView(this);
+        card.setRadius(16);
+        card.setCheckable(true);
+        card.setChecked(false);
+        card.setStrokeWidth(0);
+        card.setStrokeColor(colorAccent);
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, 16);
         card.setLayoutParams(params);
 
+        // Горизонтальный контейнер
         LinearLayout inner = new LinearLayout(this);
-        inner.setOrientation(LinearLayout.VERTICAL);
-        inner.setPadding(32, 24, 32, 24);
+        inner.setOrientation(LinearLayout.HORIZONTAL);
+        int pad = dpToPx(12);
+        inner.setPadding(pad, pad, pad, pad);
+        inner.setGravity(Gravity.TOP); // Выравнивание по верху, чтобы текст начинался сверху
 
+        // 1. Обложка книги
+        ImageView coverView = new ImageView(this);
+        int coverWidth = dpToPx(80);
+        int coverHeight = dpToPx(120);
+        LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(coverWidth, coverHeight);
+        coverParams.setMargins(0, 0, dpToPx(16), 0);
+        coverView.setLayoutParams(coverParams);
+        coverView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        coverView.setBackgroundColor(Color.LTGRAY);
+        coverView.setImageResource(android.R.drawable.ic_menu_gallery);
+
+        // 2. Контейнер для текста (Используем weight=1.0f, чтобы занять всё оставшееся место)
+        LinearLayout textContainer = new LinearLayout(this);
+        textContainer.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams textContainerParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+        textContainer.setLayoutParams(textContainerParams);
+
+        // === НАЗВАНИЕ (Жирный шрифт) ===
         TextView title = new TextView(this);
         title.setText(b.title);
-        title.setTextSize(18);
+        title.setTextSize(16);
         title.setTextColor(colorPrimary);
-        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        title.setMaxLines(2);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = dpToPx(4);
+        title.setLayoutParams(titleParams);
 
+        // === АВТОР (Менее жирный / Medium) ===
         TextView author = new TextView(this);
         author.setText(b.author);
         author.setTextSize(14);
         author.setTextColor(colorSecondary);
+        author.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        author.setMaxLines(1);
+        author.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams authorParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        authorParams.bottomMargin = dpToPx(8);
+        author.setLayoutParams(authorParams);
 
-        inner.addView(title);
-        if (!b.author.isEmpty()) inner.addView(author);
+        // === ОПИСАНИЕ (Обычный шрифт) ===
+        TextView description = new TextView(this);
+        String descText = "";
+        if (b.description != null && !b.description.isEmpty()) {
+            // Очищаем HTML-теги
+            descText = Html.fromHtml(b.description, Html.FROM_HTML_MODE_LEGACY).toString();
+            descText = descText.replaceAll("\\s+", " ").trim();
+        }
+        description.setText(descText);
+        description.setTextSize(12);
+        description.setTextColor(colorSecondary);
+        description.setTypeface(Typeface.DEFAULT); // Обычный шрифт
+        description.setMaxLines(3);
+        description.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams descParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        description.setLayoutParams(descParams);
+
+        // Собираем текстовый блок
+        textContainer.addView(title);
+        if (!b.author.isEmpty()) textContainer.addView(author);
+        if (!descText.isEmpty()) textContainer.addView(description);
+
+        // Собираем карточку
+        inner.addView(coverView);
+        inner.addView(textContainer);
         card.addView(inner);
 
+        // Загрузка обложки
+        if (b.cover != null && !b.cover.isEmpty()) {
+            loadCoverImage(coverView, b.cover);
+        }
+
+        // Логика выделения
         card.setOnClickListener(v -> {
             selected = index;
             downloadButton.setEnabled(!b.downloadEpub.isEmpty() || !b.downloadFallback.isEmpty());
             for (int i = 0; i < resultsBox.getChildCount(); i++) {
                 View child = resultsBox.getChildAt(i);
                 if (child instanceof MaterialCardView) {
-                    ((MaterialCardView) child).setChecked(i == index);
+                    MaterialCardView cv = (MaterialCardView) child;
+                    boolean isSelected = (i == index);
+                    cv.setChecked(isSelected);
+                    cv.setStrokeWidth(isSelected ? dpToPx(2) : 0);
                 }
             }
         });
@@ -317,11 +439,33 @@ public class MainActivity extends Activity {
         resultsBox.addView(card);
     }
 
+    // Метод для асинхронной загрузки изображения
+    private void loadCoverImage(ImageView imageView, String url) {
+        new Thread(() -> {
+            try {
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+                InputStream is = connection.getInputStream();
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                is.close();
+                connection.disconnect();
+
+                if (bitmap != null) {
+                    runOnUiThread(() -> imageView.setImageBitmap(bitmap));
+                }
+            } catch (Exception e) {
+                // Если изображение не загрузилось, останется заглушка
+            }
+        }).start();
+    }
+
     private void downloadSelected() {
         if (selected < 0 || selected >= books.size()) return;
         Book b = books.get(selected);
 
-        // Выбираем EPUB, если он есть, иначе fallback
         String urlToDownload = b.downloadEpub.isEmpty() ? b.downloadFallback : b.downloadEpub;
 
         if (urlToDownload.isEmpty()) {
@@ -335,7 +479,6 @@ public class MainActivity extends Activity {
             r.setDescription("Загрузка книги с Flibusta");
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
 
-            // Определение расширения (приоритет epub)
             String ext = ".fb2";
             if (b.mime.contains("epub") || !b.downloadEpub.isEmpty()) ext = ".epub";
             else if (b.mime.contains("pdf")) ext = ".pdf";
