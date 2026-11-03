@@ -69,10 +69,10 @@ public class MainActivity extends Activity {
         connection = findViewById(R.id.connection);
         resultsBox = findViewById(R.id.resultsBox);
 
-        String[] modes = new String[]{"По названию", "По автору"};
+        String[] modes = new String[]{"Название", "Автор"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, modes);
         mode.setAdapter(adapter);
-        mode.setText("По названию", false);
+        mode.setText("Название", false);
 
         findButton.setOnClickListener(v -> search());
         resetButton.setOnClickListener(v -> resetSearch());
