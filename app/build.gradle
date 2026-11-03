@@ -1,13 +1,22 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+}
 
 android {
     namespace 'ru.flibusta.app'
-    compileSdk 35
+    compileSdk 34
+
     defaultConfig {
         applicationId 'ru.flibusta.app'
         minSdk 23
-        targetSdk 28
-        versionCode 1
-        versionName '0.0.1_2026'
+        targetSdk 34 // Поднято для корректной работы Material 3 и уведомлений
+        versionCode 2
+        versionName '0.0.2_2026'
+    }
+
+    dependencies {
+        // Добавляем библиотеку Material Design 3
+        implementation 'com.google.android.material:material:1.11.0'
+        implementation 'androidx.core:core:1.12.0'
     }
 }

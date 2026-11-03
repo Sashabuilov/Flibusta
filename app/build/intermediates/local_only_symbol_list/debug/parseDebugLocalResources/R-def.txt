@@ -1,3 +1,14 @@
 R_DEF: Internal format may change without notice
 local
+id connection
+id downloadButton
+id findButton
+id mode
+id modeLayout
+id progress
+id query
+id queryLayout
+id resetButton
+id resultsBox
+layout activity_main
 mipmap ic_launcher

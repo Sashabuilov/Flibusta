@@ -1,22 +1,26 @@
 [
     {
-        "merged": "ru.flibusta.app-debug-4:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "ru.flibusta.app-main-6:/mipmap-mdpi/ic_launcher.png"
+        "merged": "ru.flibusta.app-debug-31:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "ru.flibusta.app-main-33:/mipmap-hdpi/ic_launcher.png"
     },
     {
-        "merged": "ru.flibusta.app-debug-4:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "ru.flibusta.app-main-6:/mipmap-hdpi/ic_launcher.png"
+        "merged": "ru.flibusta.app-debug-31:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "ru.flibusta.app-main-33:/mipmap-xhdpi/ic_launcher.png"
     },
     {
-        "merged": "ru.flibusta.app-debug-4:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "ru.flibusta.app-main-6:/mipmap-xxxhdpi/ic_launcher.png"
+        "merged": "ru.flibusta.app-debug-31:/layout_activity_main.xml.flat",
+        "source": "ru.flibusta.app-main-33:/layout/activity_main.xml"
     },
     {
-        "merged": "ru.flibusta.app-debug-4:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "ru.flibusta.app-main-6:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "ru.flibusta.app-debug-31:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "ru.flibusta.app-main-33:/mipmap-xxhdpi/ic_launcher.png"
     },
     {
-        "merged": "ru.flibusta.app-debug-4:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "ru.flibusta.app-main-6:/mipmap-xhdpi/ic_launcher.png"
+        "merged": "ru.flibusta.app-debug-31:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "ru.flibusta.app-main-33:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "ru.flibusta.app-debug-31:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "ru.flibusta.app-main-33:/mipmap-xxxhdpi/ic_launcher.png"
     }
 ]
