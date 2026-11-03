@@ -1,10 +1,14 @@
 R_DEF: Internal format may change without notice
 local
+drawable ic_folder
+id backButton
 id connection
 id downloadButton
 id findButton
+id headerTitle
 id mode
 id modeLayout
+id navHeader
 id progress
 id query
 id queryLayout

@@ -1,6 +1,6 @@
 # Флибуста — Android app
 
-Версия: `0.0.2_2026`
+Версия: `0.8.0.2026`
 
 Application ID: `ru.flibusta.app`
 

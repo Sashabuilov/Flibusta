@@ -1,15 +1,19 @@
 [
     {
+        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/drawable_ic_folder.png.flat",
+        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/drawable/ic_folder.png"
+    },
+    {
         "merged": "ru.flibusta.app-debug-31:/layout_activity_main.xml.flat",
         "source": "ru.flibusta.app-main-33:/layout/activity_main.xml"
     },
     {
-        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/mipmap-hdpi/ic_launcher.png"
-    },
-    {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/layout_activity_main.xml.flat",
         "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/mipmap-hdpi/ic_launcher.png"
     },
     {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-mdpi_ic_launcher.png.flat",
