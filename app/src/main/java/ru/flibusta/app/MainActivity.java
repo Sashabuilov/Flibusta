@@ -15,10 +15,13 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Filter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.inputmethod.InputMethodManager;
@@ -95,10 +98,9 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_main);
-
         query = findViewById(R.id.query);
-        mode = findViewById(R.id.mode);
         findButton = findViewById(R.id.findButton);
+        mode = findViewById(R.id.mode);
         resetButton = findViewById(R.id.resetButton);
         downloadButton = findViewById(R.id.downloadButton);
         backButton = findViewById(R.id.backButton);
@@ -111,7 +113,6 @@ public class MainActivity extends Activity {
         // Делаем меню строго нередактируемым
         mode.setFocusable(false);
         mode.setClickable(true);
-        mode.setKeyListener(null); // Полностью убирает возможность ввода текста
 
         if (query == null || mode == null || findButton == null) {
             Toast.makeText(this, "Ошибка интерфейса. Сделайте Build -> Rebuild Project.", Toast.LENGTH_LONG).show();
@@ -123,10 +124,39 @@ public class MainActivity extends Activity {
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
 
+
         String[] modes = new String[]{"Книги", "Авторы"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, modes);
+
+        // Создаем адаптер БЕЗ фильтрации
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                this,
+                R.layout.dropdown_item,
+                modes
+        ) {
+            @Override
+            public Filter getFilter() {
+                // Возвращаем фильтр, который всегда показывает все элементы
+                return new Filter() {
+                    @Override
+                    protected FilterResults performFiltering(CharSequence constraint) {
+                        FilterResults results = new FilterResults();
+                        results.values = modes;
+                        results.count = modes.length;
+                        return results;
+                    }
+
+                    @Override
+                    protected void publishResults(CharSequence constraint, FilterResults results) {
+                        // Ничего не делаем, список всегда полный
+                    }
+                };
+            }
+        };
+
         mode.setAdapter(adapter);
         mode.setText("Книги", false);
+        mode.setKeyListener(null); // Запрет ручного ввода
+        mode.setThreshold(0); // Показывать список при любом клике
 
         findButton.setOnClickListener(v -> search());
         resetButton.setOnClickListener(v -> resetSearch());
@@ -175,7 +205,7 @@ public class MainActivity extends Activity {
 
             if (previous.queryText != null && !previous.queryText.isEmpty()) {
                 query.setText(previous.queryText);
-                mode.setText(previous.modeText, false);
+                mode.setText("Книги", false);
                 performSearchInternal(previous.queryText, previous.modeText);
             } else {
                 resetSearch();

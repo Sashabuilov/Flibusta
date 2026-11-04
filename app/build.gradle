@@ -9,14 +9,27 @@ android {
     defaultConfig {
         applicationId 'ru.flibusta.app'
         minSdk 23
-        targetSdk 34 // Поднято для корректной работы Material 3 и уведомлений
+        targetSdk 34
         versionCode 2
-        versionName '0.0.2_2026'
+        versionName '0.8.0.2026' // Обновил под ваш скриншот
     }
 
-    dependencies {
-        // Добавляем библиотеку Material Design 3
-        implementation 'com.google.android.material:material:1.11.0'
-        implementation 'androidx.core:core:1.12.0'
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+// Блок dependencies ДОЛЖЕН быть здесь, СНАРУЖИ блока android!
+dependencies {
+    implementation 'com.google.android.material:material:1.12.0' // Последняя стабильная версия
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1' // Обязательна для корректной работы тем
 }

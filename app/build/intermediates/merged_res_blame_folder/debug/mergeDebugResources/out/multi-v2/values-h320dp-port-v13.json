@@ -4,7 +4,7 @@
             "outputFile": "ru.flibusta.app-mergeDebugResources-29:/values-h320dp-port-v13/values-h320dp-port-v13.xml",
             "map": [
                 {
-                    "source": "/Users/aleksandr/.gradle/caches/9.6.0/transforms/f237f4082a21450e64a7711679c0f178/transformed/material-1.11.0/res/values-h320dp-port-v13/values-h320dp-port-v13.xml",
+                    "source": "/Users/aleksandr/.gradle/caches/9.6.0/transforms/7e3ddf95c6a3fa815ce2c9b000d7c8ce/transformed/material-1.12.0/res/values-h320dp-port-v13/values-h320dp-port-v13.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

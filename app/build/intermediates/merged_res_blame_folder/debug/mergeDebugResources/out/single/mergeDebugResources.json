@@ -4,8 +4,16 @@
         "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/drawable/ic_folder.png"
     },
     {
+        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/drawable_spinner_background.xml.flat",
+        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/drawable/spinner_background.xml"
+    },
+    {
         "merged": "ru.flibusta.app-debug-31:/layout_activity_main.xml.flat",
         "source": "ru.flibusta.app-main-33:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/layout_dropdown_item.xml.flat",
+        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/layout/dropdown_item.xml"
     },
     {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/layout_activity_main.xml.flat",

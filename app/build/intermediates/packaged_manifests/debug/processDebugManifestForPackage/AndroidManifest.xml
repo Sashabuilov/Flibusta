@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ru.flibusta.app"
     android:versionCode="2"
-    android:versionName="0.0.2_2026" >
+    android:versionName="0.8.0.2026" >
 
     <uses-sdk
         android:minSdkVersion="23"
