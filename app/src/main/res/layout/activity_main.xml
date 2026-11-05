@@ -46,7 +46,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="v0.8.2.2026"
+                android:text="v0.8.5.2026"
                 android:textAppearance="?attr/textAppearanceBodySmall" />
         </LinearLayout>
 
@@ -89,11 +89,11 @@
                 android:id="@+id/modeLayout"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="62dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:hint="Критерий"
-                android:minHeight="56dp"
+
+                android:minHeight="70dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"

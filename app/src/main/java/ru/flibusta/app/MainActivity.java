@@ -53,7 +53,6 @@ public class MainActivity extends Activity {
     private int selected = -1;
     private volatile boolean connected = false;
 
-    // Переменные для механизма повторного поиска
     private volatile boolean isRetrying = false;
     private volatile boolean isRetryCancelled = false;
     private Thread retryThread = null;
@@ -120,7 +119,6 @@ public class MainActivity extends Activity {
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
 
-        // Настройка выпадающего меню Material 3 без фильтрации
         String[] modes = new String[]{"Книги", "Авторы"};
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this,
@@ -140,7 +138,6 @@ public class MainActivity extends Activity {
 
                     @Override
                     protected void publishResults(CharSequence constraint, android.widget.Filter.FilterResults results) {
-                        // Ничего не делаем, список всегда полный
                     }
                 };
             }
@@ -153,7 +150,6 @@ public class MainActivity extends Activity {
 
         findButton.setOnClickListener(v -> search());
 
-        // Умная кнопка: Сбросить или Отмена повтора
         resetButton.setOnClickListener(v -> {
             if (isRetrying) {
                 cancelRetry();
@@ -226,7 +222,8 @@ public class MainActivity extends Activity {
         currentQueryText = null;
         currentModeText = null;
         if (downloadButton != null) downloadButton.setEnabled(false);
-        if (connection != null) connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
+        if (connection != null)
+            connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
         if (backButton != null) backButton.setVisibility(View.GONE);
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
@@ -252,7 +249,8 @@ public class MainActivity extends Activity {
                         connected = true;
                     }
                     c.disconnect();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
 
                 int finalAttempt = attempt;
                 runOnUiThread(() -> {
@@ -263,7 +261,11 @@ public class MainActivity extends Activity {
                     }
                 });
 
-                try { Thread.sleep(Math.min(30000, 1000 * finalAttempt)); } catch (InterruptedException e) { break; }
+                try {
+                    Thread.sleep(Math.min(30000, 1000 * finalAttempt));
+                } catch (InterruptedException e) {
+                    break;
+                }
             }
         }).start();
     }
@@ -384,8 +386,6 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    // === МЕХАНИЗМ ПОВТОРНОГО ПОИСКА (БЕЗОПАСНЫЙ ДЛЯ UI ПОТОКА) ===
-
     private boolean isNetworkError(Exception e) {
         if (e instanceof java.net.SocketTimeoutException) return true;
         if (e instanceof java.net.UnknownHostException) return true;
@@ -401,14 +401,13 @@ public class MainActivity extends Activity {
         isRetrying = true;
         isRetryCancelled = false;
 
-        // ВАЖНО: Любое изменение UI должно быть внутри runOnUiThread
         runOnUiThread(() -> {
             setResetButtonToCancel();
             connection.setText("Таймаут. Повторная попытка...");
         });
 
         retryThread = new Thread(() -> {
-            int delay = 3000; // Начальная задержка 3 секунды
+            int delay = 3000;
 
             while (!isRetryCancelled && !isFinishing()) {
                 try {
@@ -421,7 +420,7 @@ public class MainActivity extends Activity {
                     int finalDelay = delay;
                     runOnUiThread(() -> {
                         if (!isRetrying) return;
-                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay /1000) + " сек...");
+                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay / 1000) + " сек...");
                     });
 
                     String xml = get(url);
@@ -438,12 +437,12 @@ public class MainActivity extends Activity {
                         setResetButtonToReset();
                         showResults(result, null);
                     });
-                    return; // Успех, выходим из цикла
+                    return;
 
                 } catch (InterruptedException e) {
-                    break; // Прервано
+                    break;
                 } catch (Exception e) {
-                    // Ошибка сети, продолжаем цикл попыток
+                    // Ошибка сети, продолжаем цикл
                 }
             }
 
@@ -506,8 +505,6 @@ public class MainActivity extends Activity {
             }
         });
     }
-
-    // === ПАРСЕРЫ И ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
 
     private List<CatalogItem> parseAuthorsFromSearch(String xml, String baseUrl) throws Exception {
         List<CatalogItem> out = new ArrayList<>();
@@ -582,9 +579,37 @@ public class MainActivity extends Activity {
                             current.cover = absolute;
                         }
 
+                        // === ИСПРАВЛЕНИЕ: Приоритет форматов скачивания ===
                         if (rel != null && rel.contains("acquisition")) {
-                            current.downloadUrl = absolute;
-                            current.mimeType = type == null ? "" : type.toLowerCase();
+                            String lowerType = type == null ? "" : type.toLowerCase();
+                            String lowerHref = absolute.toLowerCase();
+
+                            // Приоритет 1: EPUB (перезаписываем всегда, если нашли)
+                            if (lowerType.contains("epub") || lowerHref.contains(".epub")) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            }
+                            // Приоритет 2: FB2 / ZIP (только если EPUB еще не найден)
+                            else if (current.downloadUrl.isEmpty() && (lowerType.contains("fb2") || lowerHref.contains(".fb2") || lowerType.contains("zip"))) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            }
+                            // Приоритет 3: MOBI (только если EPUB и FB2 еще не найдены)
+                            else if (current.downloadUrl.isEmpty() && lowerType.contains("mobi")) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            }
+                            // Приоритет 4: PDF (в самом конце)
+                            else if (current.downloadUrl.isEmpty() && lowerType.contains("pdf")) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            }
+                            // Fallback: любой другой acquisition, если вообще ничего не подошло
+                            else if (current.downloadUrl.isEmpty()) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            }
+
                             current.isBook = true;
                             current.isFolder = false;
                         }
@@ -617,11 +642,11 @@ public class MainActivity extends Activity {
                 if (current != null) {
                     String v = value.toString().trim();
                     if ("title".equals(closing) && current.title.isEmpty()) current.title = v;
-                    else if ("name".equals(closing) && current.subtitle.isEmpty()) current.subtitle = v;
+                    else if ("name".equals(closing) && current.subtitle.isEmpty())
+                        current.subtitle = v;
                     else if (("summary".equals(closing) || "content".equals(closing)) && current.description.isEmpty()) {
                         current.description = v;
-                    }
-                    else if ("entry".equals(closing)) {
+                    } else if ("entry".equals(closing)) {
                         if (!current.title.isEmpty()) {
                             if (current.isBook || !current.navUrl.isEmpty()) {
                                 out.add(current);
@@ -794,7 +819,8 @@ public class MainActivity extends Activity {
                 is.close();
                 connection.disconnect();
                 if (bitmap != null) runOnUiThread(() -> imageView.setImageBitmap(bitmap));
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }).start();
     }
 
@@ -813,11 +839,20 @@ public class MainActivity extends Activity {
             r.setDescription("Загрузка с Flibusta");
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
 
-            String ext = ".fb2";
-            if (item.mimeType.contains("epub") || item.downloadUrl.contains(".epub")) ext = ".epub";
-            else if (item.mimeType.contains("pdf")) ext = ".pdf";
-            else if (item.mimeType.contains("mobi")) ext = ".mobi";
-            else if (item.mimeType.contains("zip")) ext = ".zip";
+            // === ИСПРАВЛЕНИЕ: Более надежное определение расширения ===
+            String ext = ".fb2"; // Дефолт
+            String lowerUrl = item.downloadUrl.toLowerCase();
+            String lowerMime = item.mimeType.toLowerCase();
+
+            if (lowerMime.contains("epub") || lowerUrl.contains(".epub")) {
+                ext = ".epub";
+            } else if (lowerMime.contains("mobi") || lowerUrl.contains(".mobi")) {
+                ext = ".mobi";
+            } else if (lowerMime.contains("pdf") || lowerUrl.contains(".pdf")) {
+                ext = ".pdf";
+            } else if (lowerMime.contains("zip") || lowerMime.contains("fb2")) {
+                ext = ".fb2";
+            }
 
             String safeTitle = item.title.replaceAll("[/:*?\"<>|]", "_").trim();
             if (safeTitle.length() > 90) safeTitle = safeTitle.substring(0, 90);
