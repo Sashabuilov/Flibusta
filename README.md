@@ -13,6 +13,6 @@ Application ID: `ru.flibusta.app`
 1. Откройте папку `Flibusta` в Android Studio.
 2. Дождитесь Gradle Sync (проект использует Android Gradle Plugin и compileSdk 34).
 3. Выберите `Build → Build Bundle(s) / APK(s) → Build APK(s)`.
-4. APK появится в `app/build/outputs/apk/debug/app-debug.apk`.
+4. APK появится в `app/build/outputs/apk/Flibusta_0.9.1.2026.apk`.
 
 Из командной строки после установки Android SDK:
