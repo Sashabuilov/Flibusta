@@ -93,7 +93,6 @@
                 android:layout_weight="1"
                 android:hint="Режим"
                 android:minHeight="56dp"
-                app:boxCollapsedPaddingBottom="0dp"
                 app:boxCollapsedPaddingTop="0dp"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"

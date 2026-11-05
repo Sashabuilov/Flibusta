@@ -46,24 +46,23 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="v0.8.5.2026"
+                android:text="v0.8.7.2026"
                 android:textAppearance="?attr/textAppearanceBodySmall" />
         </LinearLayout>
 
-        <!-- Горизонтальный ряд: Поиск и Критерий (одинаковая ширина и высота) -->
+        <!-- Горизонтальный ряд: Поиск и Переключатель -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <!-- Поле поиска -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/queryLayout"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="8dp"
                 android:hint="Поиск"
                 android:minHeight="56dp"
                 app:boxCornerRadiusTopStart="12dp"
@@ -84,51 +83,58 @@
                     android:paddingEnd="16dp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Переключатель режима поиска -->
-            <LinearLayout
+            <!-- Переключатель режима поиска (в стиле TextInputLayout) -->
+            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/modeLayout"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
                 android:layout_weight="1"
-                android:background="@drawable/switch_background"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
+                android:hint="Режим"
+                android:minHeight="56dp"
+                app:boxCollapsedPaddingTop="0dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
 
-                <TextView
-                    android:id="@+id/booksLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Книги"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp">
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
+                    <TextView
+                        android:id="@+id/booksLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Книги"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/mode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false" />
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="8dp"
+                        app:thumbTint="@color/switch_thumb_tint"
+                        app:trackTint="@color/switch_track_tint"
+                        android:checked="false" />
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/authorsLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Авторы"
-                    android:textSize="14sp"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/authorsLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Авторы"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
         <!-- Кнопки действий (Найти / Сбросить) -->
@@ -191,7 +197,7 @@
                 app:iconPadding="8dp"
                 app:iconSize="20dp"
                 app:cornerRadius="12dp" />
-ы
+
             <TextView
                 android:id="@+id/headerTitle"
                 android:layout_width="0dp"

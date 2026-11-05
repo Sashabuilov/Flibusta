@@ -1,5 +1,7 @@
 R_DEF: Internal format may change without notice
 local
+color switch_thumb_tint
+color switch_track_tint
 drawable ic_folder
 drawable switch_background
 id authorsLabel
