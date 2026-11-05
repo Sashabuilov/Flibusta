@@ -15,13 +15,10 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.Filter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.inputmethod.InputMethodManager;
@@ -56,20 +53,23 @@ public class MainActivity extends Activity {
     private int selected = -1;
     private volatile boolean connected = false;
 
-    // Стек навигации хранит состояния, КУДА нужно вернуться
+    // Переменные для механизма повторного поиска
+    private volatile boolean isRetrying = false;
+    private volatile boolean isRetryCancelled = false;
+    private Thread retryThread = null;
+
     private final Stack<NavState> navStack = new Stack<>();
 
-    // Текущее состояние
-    private String currentUrl = null;      // null если мы на странице поиска
-    private String currentTitle = null;    // заголовок текущего раздела
+    private String currentUrl = null;
+    private String currentTitle = null;
     private String currentQueryText = null;
     private String currentModeText = null;
 
     static class NavState {
-        String url;          // null если это поиск
-        String title;        // заголовок (для url != null)
-        String queryText;    // текст поиска (для url == null)
-        String modeText;     // режим поиска (для url == null)
+        String url;
+        String title;
+        String queryText;
+        String modeText;
 
         NavState(String url, String title, String queryText, String modeText) {
             this.url = url;
@@ -98,9 +98,10 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_main);
+
         query = findViewById(R.id.query);
-        findButton = findViewById(R.id.findButton);
         mode = findViewById(R.id.mode);
+        findButton = findViewById(R.id.findButton);
         resetButton = findViewById(R.id.resetButton);
         downloadButton = findViewById(R.id.downloadButton);
         backButton = findViewById(R.id.backButton);
@@ -110,43 +111,35 @@ public class MainActivity extends Activity {
         resultsBox = findViewById(R.id.resultsBox);
         navHeader = findViewById(R.id.navHeader);
 
-        // Делаем меню строго нередактируемым
-        mode.setFocusable(false);
-        mode.setClickable(true);
-
         if (query == null || mode == null || findButton == null) {
             Toast.makeText(this, "Ошибка интерфейса. Сделайте Build -> Rebuild Project.", Toast.LENGTH_LONG).show();
             return;
         }
 
-        // Скрываем навигацию при запуске
         if (backButton != null) backButton.setVisibility(View.GONE);
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
 
-
+        // Настройка выпадающего меню Material 3 без фильтрации
         String[] modes = new String[]{"Книги", "Авторы"};
-
-        // Создаем адаптер БЕЗ фильтрации
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this,
                 R.layout.dropdown_item,
                 modes
         ) {
             @Override
-            public Filter getFilter() {
-                // Возвращаем фильтр, который всегда показывает все элементы
-                return new Filter() {
+            public android.widget.Filter getFilter() {
+                return new android.widget.Filter() {
                     @Override
-                    protected FilterResults performFiltering(CharSequence constraint) {
-                        FilterResults results = new FilterResults();
+                    protected android.widget.Filter.FilterResults performFiltering(CharSequence constraint) {
+                        android.widget.Filter.FilterResults results = new android.widget.Filter.FilterResults();
                         results.values = modes;
                         results.count = modes.length;
                         return results;
                     }
 
                     @Override
-                    protected void publishResults(CharSequence constraint, FilterResults results) {
+                    protected void publishResults(CharSequence constraint, android.widget.Filter.FilterResults results) {
                         // Ничего не делаем, список всегда полный
                     }
                 };
@@ -155,11 +148,20 @@ public class MainActivity extends Activity {
 
         mode.setAdapter(adapter);
         mode.setText("Книги", false);
-        mode.setKeyListener(null); // Запрет ручного ввода
-        mode.setThreshold(0); // Показывать список при любом клике
+        mode.setKeyListener(null);
+        mode.setThreshold(0);
 
         findButton.setOnClickListener(v -> search());
-        resetButton.setOnClickListener(v -> resetSearch());
+
+        // Умная кнопка: Сбросить или Отмена повтора
+        resetButton.setOnClickListener(v -> {
+            if (isRetrying) {
+                cancelRetry();
+            } else {
+                resetSearch();
+            }
+        });
+
         downloadButton.setOnClickListener(v -> downloadSelected());
 
         if (backButton != null) {
@@ -170,8 +172,9 @@ public class MainActivity extends Activity {
     }
 
     private void goBack() {
+        if (isRetrying) cancelRetry();
+
         if (navStack.isEmpty()) {
-            // Нечего возвращать — сбрасываем всё
             currentUrl = null;
             currentTitle = null;
             currentQueryText = null;
@@ -183,11 +186,9 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // Достаем предыдущее состояние
         NavState previous = navStack.pop();
 
         if (previous.url != null) {
-            // Возвращаемся к предыдущему URL
             currentUrl = previous.url;
             currentTitle = previous.title;
             if (headerTitle != null) {
@@ -196,7 +197,6 @@ public class MainActivity extends Activity {
             }
             loadUrl(previous.url);
         } else {
-            // Возвращаемся к поиску
             currentUrl = null;
             currentTitle = null;
             if (backButton != null) backButton.setVisibility(View.GONE);
@@ -205,7 +205,7 @@ public class MainActivity extends Activity {
 
             if (previous.queryText != null && !previous.queryText.isEmpty()) {
                 query.setText(previous.queryText);
-                mode.setText("Книги", false);
+                mode.setText(previous.modeText, false);
                 performSearchInternal(previous.queryText, previous.modeText);
             } else {
                 resetSearch();
@@ -214,6 +214,8 @@ public class MainActivity extends Activity {
     }
 
     private void resetSearch() {
+        if (isRetrying) cancelRetry();
+
         if (query != null) query.setText("");
         if (resultsBox != null) resultsBox.removeAllViews();
         items.clear();
@@ -254,9 +256,9 @@ public class MainActivity extends Activity {
 
                 int finalAttempt = attempt;
                 runOnUiThread(() -> {
-                    if (!connected && connection != null) {
+                    if (!connected && connection != null && !isRetrying) {
                         connection.setText("Подключение... (" + finalAttempt + ")");
-                    } else if (connection != null) {
+                    } else if (connection != null && !isRetrying) {
                         connection.setText("Подключено к flibusta.is");
                     }
                 });
@@ -277,7 +279,6 @@ public class MainActivity extends Activity {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) imm.hideSoftInputFromWindow(query.getWindowToken(), 0);
 
-        // Новый поиск — очищаем стек
         navStack.clear();
         currentUrl = null;
         currentTitle = null;
@@ -293,7 +294,8 @@ public class MainActivity extends Activity {
         currentModeText = modeText;
 
         findButton.setEnabled(false);
-        resetButton.setEnabled(false);
+        resetButton.setEnabled(true);
+        setResetButtonToReset();
         progress.setVisibility(View.VISIBLE);
         connection.setText("Загрузка…");
         resultsBox.removeAllViews();
@@ -304,10 +306,11 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             List<CatalogItem> found = new ArrayList<>();
             String error = null;
+            String url = null;
             try {
                 String type = modeText.contains("Автор") ? "authors" : "books";
                 String encodedQuery = URLEncoder.encode(queryText, "UTF-8");
-                String url = BASE + "/opds/search?searchTerm=" + encodedQuery + "&searchType=" + type + "&pageNumber=0";
+                url = BASE + "/opds/search?searchTerm=" + encodedQuery + "&searchType=" + type + "&pageNumber=0";
 
                 String xml = get(url);
 
@@ -318,30 +321,18 @@ public class MainActivity extends Activity {
                 }
             } catch (Exception e) {
                 error = e.getMessage();
-                android.util.Log.e("Flibusta", "Error", e);
+                android.util.Log.e("Flibusta", "Search Error", e);
+                if (isNetworkError(e)) {
+                    startRetry(url, modeText.contains("Автор"), modeText);
+                    return;
+                }
             }
 
-            final List<CatalogItem> result = found;
-            final String err = error;
-            runOnUiThread(() -> {
-                progress.setVisibility(View.GONE);
-                findButton.setEnabled(true);
-                resetButton.setEnabled(true);
-                connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
-
-                if (err != null) addMessage("Ошибка: " + err);
-                else if (result.isEmpty()) addMessage("Пусто.");
-                else {
-                    items.addAll(result);
-                    for (int i = 0; i < items.size(); i++) addItemRow(i, items.get(i));
-                }
-            });
+            showResults(found, error);
         }).start();
     }
 
-    // Переход во вложенность (автор или папка)
     private void navigateTo(String url, String title) {
-        // Сохраняем ТЕКУЩЕЕ состояние в стек (откуда уходим)
         NavState current;
         if (currentUrl != null) {
             current = new NavState(currentUrl, currentTitle, null, null);
@@ -350,11 +341,9 @@ public class MainActivity extends Activity {
         }
         navStack.push(current);
 
-        // Обновляем текущее состояние
         currentUrl = url;
         currentTitle = title;
 
-        // Показываем навигацию
         if (navHeader != null) navHeader.setVisibility(View.VISIBLE);
         if (backButton != null) backButton.setVisibility(View.VISIBLE);
         if (headerTitle != null) {
@@ -367,7 +356,8 @@ public class MainActivity extends Activity {
 
     private void loadUrl(String url) {
         findButton.setEnabled(false);
-        resetButton.setEnabled(false);
+        resetButton.setEnabled(true);
+        setResetButtonToReset();
         progress.setVisibility(View.VISIBLE);
         connection.setText("Загрузка…");
         resultsBox.removeAllViews();
@@ -383,26 +373,141 @@ public class MainActivity extends Activity {
                 found = parseCatalog(xml, url);
             } catch (Exception e) {
                 error = e.getMessage();
-                android.util.Log.e("Flibusta", "Error", e);
+                android.util.Log.e("Flibusta", "Nav Error", e);
+                if (isNetworkError(e)) {
+                    startRetry(url, false, "");
+                    return;
+                }
             }
 
-            final List<CatalogItem> result = found;
-            final String err = error;
-            runOnUiThread(() -> {
-                progress.setVisibility(View.GONE);
-                findButton.setEnabled(true);
-                resetButton.setEnabled(true);
-                connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
-
-                if (err != null) addMessage("Ошибка: " + err);
-                else if (result.isEmpty()) addMessage("Пусто.");
-                else {
-                    items.addAll(result);
-                    for (int i = 0; i < items.size(); i++) addItemRow(i, items.get(i));
-                }
-            });
+            showResults(found, error);
         }).start();
     }
+
+    // === МЕХАНИЗМ ПОВТОРНОГО ПОИСКА (БЕЗОПАСНЫЙ ДЛЯ UI ПОТОКА) ===
+
+    private boolean isNetworkError(Exception e) {
+        if (e instanceof java.net.SocketTimeoutException) return true;
+        if (e instanceof java.net.UnknownHostException) return true;
+        if (e instanceof java.net.ConnectException) return true;
+        if (e.getMessage() != null) {
+            String msg = e.getMessage().toLowerCase();
+            return msg.contains("timeout") || msg.contains("network") || msg.contains("connection");
+        }
+        return false;
+    }
+
+    private void startRetry(final String url, final boolean isAuthorSearch, final String modeText) {
+        isRetrying = true;
+        isRetryCancelled = false;
+
+        // ВАЖНО: Любое изменение UI должно быть внутри runOnUiThread
+        runOnUiThread(() -> {
+            setResetButtonToCancel();
+            connection.setText("Таймаут. Повторная попытка...");
+        });
+
+        retryThread = new Thread(() -> {
+            int delay = 3000; // Начальная задержка 3 секунды
+
+            while (!isRetryCancelled && !isFinishing()) {
+                try {
+                    Thread.sleep(delay);
+                    if (isRetryCancelled) break;
+
+                    delay = Math.min(delay + 2000, 15000);
+                    final int attempt = (delay - 3000) / 2000 + 1;
+
+                    int finalDelay = delay;
+                    runOnUiThread(() -> {
+                        if (!isRetrying) return;
+                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay /1000) + " сек...");
+                    });
+
+                    String xml = get(url);
+                    List<CatalogItem> found;
+                    if (isAuthorSearch) {
+                        found = parseAuthorsFromSearch(xml, url);
+                    } else {
+                        found = parseCatalog(xml, url);
+                    }
+
+                    final List<CatalogItem> result = found;
+                    runOnUiThread(() -> {
+                        isRetrying = false;
+                        setResetButtonToReset();
+                        showResults(result, null);
+                    });
+                    return; // Успех, выходим из цикла
+
+                } catch (InterruptedException e) {
+                    break; // Прервано
+                } catch (Exception e) {
+                    // Ошибка сети, продолжаем цикл попыток
+                }
+            }
+
+            runOnUiThread(() -> {
+                isRetrying = false;
+                setResetButtonToReset();
+                progress.setVisibility(View.GONE);
+                findButton.setEnabled(true);
+                if (isRetryCancelled) {
+                    connection.setText("Поиск отменен");
+                } else {
+                    connection.setText(connected ? "Подключено" : "Нет соединения");
+                }
+            });
+        });
+        retryThread.start();
+    }
+
+    private void cancelRetry() {
+        isRetryCancelled = true;
+        if (retryThread != null) retryThread.interrupt();
+        isRetrying = false;
+
+        runOnUiThread(() -> {
+            setResetButtonToReset();
+            progress.setVisibility(View.GONE);
+            findButton.setEnabled(true);
+            connection.setText("Поиск отменен");
+        });
+    }
+
+    private void setResetButtonToCancel() {
+        if (resetButton != null) {
+            resetButton.setText("Отмена");
+            resetButton.setIconResource(android.R.drawable.ic_menu_close_clear_cancel);
+        }
+    }
+
+    private void setResetButtonToReset() {
+        if (resetButton != null) {
+            resetButton.setText("Сбросить");
+            resetButton.setIconResource(android.R.drawable.ic_menu_close_clear_cancel);
+        }
+    }
+
+    private void showResults(List<CatalogItem> result, String error) {
+        runOnUiThread(() -> {
+            progress.setVisibility(View.GONE);
+            findButton.setEnabled(true);
+            resetButton.setEnabled(true);
+            connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
+
+            if (error != null) {
+                addMessage("Ошибка: " + error);
+            } else if (result == null || result.isEmpty()) {
+                addMessage("Пусто.");
+            } else {
+                items.addAll(result);
+                for (int i = 0; i < items.size(); i++) addItemRow(i, items.get(i));
+            }
+        });
+    }
+
+    // === ПАРСЕРЫ И ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
 
     private List<CatalogItem> parseAuthorsFromSearch(String xml, String baseUrl) throws Exception {
         List<CatalogItem> out = new ArrayList<>();
@@ -473,12 +578,10 @@ public class MainActivity extends Activity {
                     if (href != null) {
                         String absolute = new URL(new URL(baseUrl), href).toString();
 
-                        // Обложка
                         if ((rel != null && rel.contains("image")) || (type != null && type.startsWith("image/"))) {
                             current.cover = absolute;
                         }
 
-                        // Ссылка на скачивание (Книга) — ПРОВЕРЯЕМ ПЕРВОЙ!
                         if (rel != null && rel.contains("acquisition")) {
                             current.downloadUrl = absolute;
                             current.mimeType = type == null ? "" : type.toLowerCase();
@@ -486,10 +589,8 @@ public class MainActivity extends Activity {
                             current.isFolder = false;
                         }
 
-                        // Ссылка на подраздел — только если ещё не книга
                         if (!current.isBook) {
                             boolean isNavLink = false;
-
                             if (rel != null) {
                                 if (rel.contains("subsection") || rel.contains("collection") ||
                                         rel.contains("http://opds-spec.org/sort") ||
@@ -497,13 +598,11 @@ public class MainActivity extends Activity {
                                     isNavLink = true;
                                 }
                             }
-
                             if (absolute.contains("/opds/author/") ||
                                     absolute.contains("/opds/authorsequences/") ||
                                     absolute.contains("/opds/authorsequenceless/")) {
                                 isNavLink = true;
                             }
-
                             if (isNavLink && current.navUrl.isEmpty()) {
                                 current.navUrl = absolute;
                                 current.isFolder = true;
@@ -539,8 +638,8 @@ public class MainActivity extends Activity {
     private String get(String urlString) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(urlString).openConnection();
         c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        c.setConnectTimeout(15000);
-        c.setReadTimeout(15000);
+        c.setConnectTimeout(10000);
+        c.setReadTimeout(10000);
 
         int responseCode = c.getResponseCode();
         InputStream in = (responseCode >= 200 && responseCode < 300) ? c.getInputStream() : c.getErrorStream();
@@ -608,21 +707,19 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(width, height);
         iconParams.setMargins(0, 0, dpToPx(16), 0);
         iconView.setLayoutParams(iconParams);
-        iconView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        iconView.setBackgroundColor(Color.LTGRAY);
 
         if (item.isFolder) {
             iconView.setImageResource(R.drawable.ic_folder);
             iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            iconView.setBackgroundColor(Color.TRANSPARENT); // Прозрачный фон для папки
+            iconView.setBackgroundColor(Color.TRANSPARENT);
         } else if (item.isAuthor) {
             iconView.setImageResource(android.R.drawable.ic_menu_myplaces);
             iconView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            iconView.setBackgroundColor(Color.LTGRAY); // Фон для автора
+            iconView.setBackgroundColor(Color.LTGRAY);
         } else {
             iconView.setImageResource(android.R.drawable.ic_menu_gallery);
             iconView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            iconView.setBackgroundColor(Color.LTGRAY); // Фон для книги
+            iconView.setBackgroundColor(Color.LTGRAY);
         }
 
         LinearLayout textContainer = new LinearLayout(this);

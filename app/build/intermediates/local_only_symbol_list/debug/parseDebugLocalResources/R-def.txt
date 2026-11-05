@@ -1,7 +1,6 @@
 R_DEF: Internal format may change without notice
 local
 drawable ic_folder
-drawable spinner_background
 id backButton
 id connection
 id downloadButton
