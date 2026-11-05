@@ -1,5 +1,9 @@
 [
     {
+        "merged": "ru.flibusta.app-debug-31:/drawable_switch_background.xml.flat",
+        "source": "ru.flibusta.app-main-33:/drawable/switch_background.xml"
+    },
+    {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/drawable_ic_folder.png.flat",
         "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/drawable/ic_folder.png"
     },

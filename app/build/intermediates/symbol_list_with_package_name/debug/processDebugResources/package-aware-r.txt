@@ -3003,6 +3003,7 @@ drawable notification_template_icon_bg
 drawable notification_template_icon_low_bg
 drawable notification_tile_bg
 drawable notify_panel_notification_icon_bg
+drawable switch_background
 drawable test_level_drawable
 drawable tooltip_frame_dark
 drawable tooltip_frame_light
@@ -3083,6 +3084,7 @@ id animateToStart
 id arc
 id asConfigured
 id async
+id authorsLabel
 id auto
 id autoComplete
 id autoCompleteToEnd
@@ -3093,6 +3095,7 @@ id baseline
 id beginOnFirstDraw
 id beginning
 id blocking
+id booksLabel
 id bottom
 id bounce
 id buttonPanel

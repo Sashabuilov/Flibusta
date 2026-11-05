@@ -84,32 +84,51 @@
                     android:paddingEnd="16dp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Выпадающий список критериев -->
-            <com.google.android.material.textfield.TextInputLayout
+            <!-- Переключатель режима поиска -->
+            <LinearLayout
                 android:id="@+id/modeLayout"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                android:layout_width="0dp"
-                android:layout_height="62dp"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:layout_weight="1"
-                android:layout_marginStart="4dp"
+                android:background="@drawable/switch_background"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
-                android:minHeight="70dp"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp">
-
-                <AutoCompleteTextView
-                    android:id="@+id/mode"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:inputType="none"
+                <TextView
+                    android:id="@+id/booksLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Книги"
-                    android:background="@null"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="48dp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/authorsLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Авторы"
+                    android:textSize="14sp"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Кнопки действий (Найти / Сбросить) -->

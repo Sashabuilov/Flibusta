@@ -15,8 +15,6 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -25,6 +23,7 @@ import android.view.inputmethod.InputMethodManager;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -43,7 +42,8 @@ public class MainActivity extends Activity {
     private static final String BASE = "http://flibusta.is";
 
     private TextInputEditText query;
-    private AutoCompleteTextView mode;
+    private MaterialSwitch modeSwitch;
+    private TextView booksLabel, authorsLabel;
     private MaterialButton findButton, resetButton, downloadButton, backButton;
     private LinearProgressIndicator progress;
     private TextView connection, headerTitle;
@@ -99,7 +99,9 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         query = findViewById(R.id.query);
-        mode = findViewById(R.id.mode);
+        modeSwitch = findViewById(R.id.mode);
+        booksLabel = findViewById(R.id.booksLabel);
+        authorsLabel = findViewById(R.id.authorsLabel);
         findButton = findViewById(R.id.findButton);
         resetButton = findViewById(R.id.resetButton);
         downloadButton = findViewById(R.id.downloadButton);
@@ -110,7 +112,7 @@ public class MainActivity extends Activity {
         resultsBox = findViewById(R.id.resultsBox);
         navHeader = findViewById(R.id.navHeader);
 
-        if (query == null || mode == null || findButton == null) {
+        if (query == null || modeSwitch == null || findButton == null) {
             Toast.makeText(this, "Ошибка интерфейса. Сделайте Build -> Rebuild Project.", Toast.LENGTH_LONG).show();
             return;
         }
@@ -119,34 +121,13 @@ public class MainActivity extends Activity {
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
 
-        String[] modes = new String[]{"Книги", "Авторы"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                this,
-                R.layout.dropdown_item,
-                modes
-        ) {
-            @Override
-            public android.widget.Filter getFilter() {
-                return new android.widget.Filter() {
-                    @Override
-                    protected android.widget.Filter.FilterResults performFiltering(CharSequence constraint) {
-                        android.widget.Filter.FilterResults results = new android.widget.Filter.FilterResults();
-                        results.values = modes;
-                        results.count = modes.length;
-                        return results;
-                    }
+        // Настройка переключателя режима поиска
+        modeSwitch.setChecked(false); // По умолчанию: Книги
+        updateModeLabels(false);
 
-                    @Override
-                    protected void publishResults(CharSequence constraint, android.widget.Filter.FilterResults results) {
-                    }
-                };
-            }
-        };
-
-        mode.setAdapter(adapter);
-        mode.setText("Книги", false);
-        mode.setKeyListener(null);
-        mode.setThreshold(0);
+        modeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            updateModeLabels(isChecked);
+        });
 
         findButton.setOnClickListener(v -> search());
 
@@ -165,6 +146,32 @@ public class MainActivity extends Activity {
         }
 
         connectLoop();
+    }
+
+    private void updateModeLabels(boolean isAuthorsMode) {
+        if (isAuthorsMode) {
+            // Режим "Авторы" - правая подпись активна
+            booksLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
+            booksLabel.setTypeface(null, android.graphics.Typeface.NORMAL);
+            authorsLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurface));
+            authorsLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+        } else {
+            // Режим "Книги" - левая подпись активна
+            booksLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurface));
+            booksLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+            authorsLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
+            authorsLabel.setTypeface(null, android.graphics.Typeface.NORMAL);
+        }
+    }
+
+    private int getThemeColor(int attr) {
+        TypedValue typedValue = new TypedValue();
+        getTheme().resolveAttribute(attr, typedValue, true);
+        return typedValue.data;
+    }
+
+    private String getModeText() {
+        return modeSwitch.isChecked() ? "Авторы" : "Книги";
     }
 
     private void goBack() {
@@ -201,7 +208,8 @@ public class MainActivity extends Activity {
 
             if (previous.queryText != null && !previous.queryText.isEmpty()) {
                 query.setText(previous.queryText);
-                mode.setText(previous.modeText, false);
+                modeSwitch.setChecked("Авторы".equals(previous.modeText));
+                updateModeLabels("Авторы".equals(previous.modeText));
                 performSearchInternal(previous.queryText, previous.modeText);
             } else {
                 resetSearch();
@@ -222,8 +230,7 @@ public class MainActivity extends Activity {
         currentQueryText = null;
         currentModeText = null;
         if (downloadButton != null) downloadButton.setEnabled(false);
-        if (connection != null)
-            connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
+        if (connection != null) connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
         if (backButton != null) backButton.setVisibility(View.GONE);
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
@@ -249,8 +256,7 @@ public class MainActivity extends Activity {
                         connected = true;
                     }
                     c.disconnect();
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
 
                 int finalAttempt = attempt;
                 runOnUiThread(() -> {
@@ -261,17 +267,13 @@ public class MainActivity extends Activity {
                     }
                 });
 
-                try {
-                    Thread.sleep(Math.min(30000, 1000 * finalAttempt));
-                } catch (InterruptedException e) {
-                    break;
-                }
+                try { Thread.sleep(Math.min(30000, 1000 * finalAttempt)); } catch (InterruptedException e) { break; }
             }
         }).start();
     }
 
     private void search() {
-        if (query == null || mode == null) return;
+        if (query == null) return;
         String q = query.getText() != null ? query.getText().toString().trim() : "";
         if (q.isEmpty()) {
             query.setError("Введите запрос");
@@ -288,7 +290,7 @@ public class MainActivity extends Activity {
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
 
-        performSearchInternal(q, mode.getText().toString());
+        performSearchInternal(q, getModeText());
     }
 
     private void performSearchInternal(String queryText, String modeText) {
@@ -420,7 +422,7 @@ public class MainActivity extends Activity {
                     int finalDelay = delay;
                     runOnUiThread(() -> {
                         if (!isRetrying) return;
-                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay / 1000) + " сек...");
+                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay /1000) + " сек...");
                     });
 
                     String xml = get(url);
@@ -579,32 +581,26 @@ public class MainActivity extends Activity {
                             current.cover = absolute;
                         }
 
-                        // === ИСПРАВЛЕНИЕ: Приоритет форматов скачивания ===
                         if (rel != null && rel.contains("acquisition")) {
                             String lowerType = type == null ? "" : type.toLowerCase();
                             String lowerHref = absolute.toLowerCase();
 
-                            // Приоритет 1: EPUB (перезаписываем всегда, если нашли)
                             if (lowerType.contains("epub") || lowerHref.contains(".epub")) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
                             }
-                            // Приоритет 2: FB2 / ZIP (только если EPUB еще не найден)
                             else if (current.downloadUrl.isEmpty() && (lowerType.contains("fb2") || lowerHref.contains(".fb2") || lowerType.contains("zip"))) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
                             }
-                            // Приоритет 3: MOBI (только если EPUB и FB2 еще не найдены)
                             else if (current.downloadUrl.isEmpty() && lowerType.contains("mobi")) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
                             }
-                            // Приоритет 4: PDF (в самом конце)
                             else if (current.downloadUrl.isEmpty() && lowerType.contains("pdf")) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
                             }
-                            // Fallback: любой другой acquisition, если вообще ничего не подошло
                             else if (current.downloadUrl.isEmpty()) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
@@ -642,11 +638,11 @@ public class MainActivity extends Activity {
                 if (current != null) {
                     String v = value.toString().trim();
                     if ("title".equals(closing) && current.title.isEmpty()) current.title = v;
-                    else if ("name".equals(closing) && current.subtitle.isEmpty())
-                        current.subtitle = v;
+                    else if ("name".equals(closing) && current.subtitle.isEmpty()) current.subtitle = v;
                     else if (("summary".equals(closing) || "content".equals(closing)) && current.description.isEmpty()) {
                         current.description = v;
-                    } else if ("entry".equals(closing)) {
+                    }
+                    else if ("entry".equals(closing)) {
                         if (!current.title.isEmpty()) {
                             if (current.isBook || !current.navUrl.isEmpty()) {
                                 out.add(current);
@@ -819,8 +815,7 @@ public class MainActivity extends Activity {
                 is.close();
                 connection.disconnect();
                 if (bitmap != null) runOnUiThread(() -> imageView.setImageBitmap(bitmap));
-            } catch (Exception e) {
-            }
+            } catch (Exception e) {}
         }).start();
     }
 
@@ -839,8 +834,7 @@ public class MainActivity extends Activity {
             r.setDescription("Загрузка с Flibusta");
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
 
-            // === ИСПРАВЛЕНИЕ: Более надежное определение расширения ===
-            String ext = ".fb2"; // Дефолт
+            String ext = ".fb2";
             String lowerUrl = item.downloadUrl.toLowerCase();
             String lowerMime = item.mimeType.toLowerCase();
 

@@ -1,7 +1,10 @@
 R_DEF: Internal format may change without notice
 local
 drawable ic_folder
+drawable switch_background
+id authorsLabel
 id backButton
+id booksLabel
 id connection
 id downloadButton
 id findButton
