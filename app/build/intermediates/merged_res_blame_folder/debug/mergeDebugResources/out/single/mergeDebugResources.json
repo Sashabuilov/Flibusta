@@ -8,20 +8,20 @@
         "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/layout/dropdown_item.xml"
     },
     {
-        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/mipmap-hdpi/ic_launcher.png"
-    },
-    {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-mdpi_ic_launcher.png.flat",
         "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/mipmap-mdpi/ic_launcher.png"
     },
     {
-        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/color_switch_track_tint.xml.flat",
-        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/color/switch_track_tint.xml"
+        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/mipmap-hdpi/ic_launcher.png"
     },
     {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-xxxhdpi_ic_launcher.png.flat",
         "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/color_switch_track_tint.xml.flat",
+        "source": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-main-33:/color/switch_track_tint.xml"
     },
     {
         "merged": "/Users/aleksandr/.gradle/daemon/9.6.0/ru.flibusta.app-debug-31:/mipmap-xxhdpi_ic_launcher.png.flat",
