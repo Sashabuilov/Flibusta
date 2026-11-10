@@ -26,7 +26,6 @@
         android:icon="@mipmap/ic_launcher"
         android:label="Флибуста"
         android:roundIcon="@mipmap/ic_launcher"
-        android:testOnly="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar"
         android:usesCleartextTraffic="true" >
         <activity
