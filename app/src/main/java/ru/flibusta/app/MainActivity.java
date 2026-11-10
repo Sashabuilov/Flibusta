@@ -64,6 +64,10 @@ public class MainActivity extends Activity {
     private String currentQueryText = null;
     private String currentModeText = null;
 
+    // Пагинация
+    private String nextPageUrl = null;
+    //private String prevPageUrl = null;
+
     static class NavState {
         String url;
         String title;
@@ -121,42 +125,32 @@ public class MainActivity extends Activity {
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
 
-        // Настройка переключателя режима поиска
-        modeSwitch.setChecked(false); // По умолчанию: Книги
+        modeSwitch.setChecked(false);
         updateModeLabels(false);
 
-        modeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            updateModeLabels(isChecked);
-        });
+        modeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> updateModeLabels(isChecked));
 
         findButton.setOnClickListener(v -> search());
 
         resetButton.setOnClickListener(v -> {
-            if (isRetrying) {
-                cancelRetry();
-            } else {
-                resetSearch();
-            }
+            if (isRetrying) cancelRetry();
+            else resetSearch();
         });
 
         downloadButton.setOnClickListener(v -> downloadSelected());
 
-        if (backButton != null) {
-            backButton.setOnClickListener(v -> goBack());
-        }
+        if (backButton != null) backButton.setOnClickListener(v -> goBack());
 
         connectLoop();
     }
 
     private void updateModeLabels(boolean isAuthorsMode) {
         if (isAuthorsMode) {
-            // Режим "Авторы" - правая подпись активна
             booksLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
             booksLabel.setTypeface(null, android.graphics.Typeface.NORMAL);
             authorsLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurface));
             authorsLabel.setTypeface(null, android.graphics.Typeface.BOLD);
         } else {
-            // Режим "Книги" - левая подпись активна
             booksLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurface));
             booksLabel.setTypeface(null, android.graphics.Typeface.BOLD);
             authorsLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
@@ -229,8 +223,11 @@ public class MainActivity extends Activity {
         currentTitle = null;
         currentQueryText = null;
         currentModeText = null;
+        nextPageUrl = null;
+
         if (downloadButton != null) downloadButton.setEnabled(false);
-        if (connection != null) connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
+        if (connection != null)
+            connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
         if (backButton != null) backButton.setVisibility(View.GONE);
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
@@ -248,7 +245,7 @@ public class MainActivity extends Activity {
                     HttpURLConnection c = (HttpURLConnection) new URL(BASE + "/opds").openConnection();
                     c.setConnectTimeout(12000);
                     c.setReadTimeout(15000);
-                    c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                    c.setRequestProperty("User-Agent", "Mozilla/5.0");
                     int code = c.getResponseCode();
                     if (code >= 200 && code < 400) {
                         InputStream in = c.getInputStream();
@@ -256,18 +253,22 @@ public class MainActivity extends Activity {
                         connected = true;
                     }
                     c.disconnect();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
 
                 int finalAttempt = attempt;
                 runOnUiThread(() -> {
-                    if (!connected && connection != null && !isRetrying) {
+                    if (!connected && connection != null && !isRetrying)
                         connection.setText("Подключение... (" + finalAttempt + ")");
-                    } else if (connection != null && !isRetrying) {
+                    else if (connection != null && !isRetrying)
                         connection.setText("Подключено к flibusta.is");
-                    }
                 });
 
-                try { Thread.sleep(Math.min(30000, 1000 * finalAttempt)); } catch (InterruptedException e) { break; }
+                try {
+                    Thread.sleep(Math.min(30000, 1000 * finalAttempt));
+                } catch (InterruptedException e) {
+                    break;
+                }
             }
         }).start();
     }
@@ -286,6 +287,8 @@ public class MainActivity extends Activity {
         navStack.clear();
         currentUrl = null;
         currentTitle = null;
+        nextPageUrl = null;
+
         if (backButton != null) backButton.setVisibility(View.GONE);
         if (headerTitle != null) headerTitle.setVisibility(View.GONE);
         if (navHeader != null) navHeader.setVisibility(View.GONE);
@@ -306,6 +309,7 @@ public class MainActivity extends Activity {
         items.clear();
         selected = -1;
         downloadButton.setEnabled(false);
+        nextPageUrl = null;
 
         new Thread(() -> {
             List<CatalogItem> found = new ArrayList<>();
@@ -315,14 +319,9 @@ public class MainActivity extends Activity {
                 String type = modeText.contains("Автор") ? "authors" : "books";
                 String encodedQuery = URLEncoder.encode(queryText, "UTF-8");
                 url = BASE + "/opds/search?searchTerm=" + encodedQuery + "&searchType=" + type + "&pageNumber=0";
-
                 String xml = get(url);
-
-                if (modeText.contains("Автор")) {
-                    found = parseAuthorsFromSearch(xml, url);
-                } else {
-                    found = parseCatalog(xml, url);
-                }
+                if (modeText.contains("Автор")) found = parseAuthorsFromSearch(xml, url);
+                else found = parseCatalog(xml, url);
             } catch (Exception e) {
                 error = e.getMessage();
                 android.util.Log.e("Flibusta", "Search Error", e);
@@ -331,22 +330,17 @@ public class MainActivity extends Activity {
                     return;
                 }
             }
-
             showResults(found, error);
         }).start();
     }
 
     private void navigateTo(String url, String title) {
-        NavState current;
-        if (currentUrl != null) {
-            current = new NavState(currentUrl, currentTitle, null, null);
-        } else {
-            current = new NavState(null, null, currentQueryText, currentModeText);
-        }
+        NavState current = (currentUrl != null) ? new NavState(currentUrl, currentTitle, null, null) : new NavState(null, null, currentQueryText, currentModeText);
         navStack.push(current);
 
         currentUrl = url;
         currentTitle = title;
+        nextPageUrl = null;
 
         if (navHeader != null) navHeader.setVisibility(View.VISIBLE);
         if (backButton != null) backButton.setVisibility(View.VISIBLE);
@@ -354,7 +348,6 @@ public class MainActivity extends Activity {
             headerTitle.setVisibility(View.VISIBLE);
             headerTitle.setText(title != null ? title : "Каталог");
         }
-
         loadUrl(url);
     }
 
@@ -368,6 +361,7 @@ public class MainActivity extends Activity {
         items.clear();
         selected = -1;
         downloadButton.setEnabled(false);
+        nextPageUrl = null;
 
         new Thread(() -> {
             List<CatalogItem> found = new ArrayList<>();
@@ -383,10 +377,83 @@ public class MainActivity extends Activity {
                     return;
                 }
             }
-
             showResults(found, error);
         }).start();
     }
+
+    // === ПАГИНАЦИЯ ===
+
+    private void loadNextPage() {
+        if (nextPageUrl == null || nextPageUrl.isEmpty()) return;
+
+        runOnUiThread(() -> {
+            for (int i = 0; i < resultsBox.getChildCount(); i++) {
+                View child = resultsBox.getChildAt(i);
+                if (child instanceof MaterialButton && "LOAD_MORE".equals(child.getTag())) {
+                    MaterialButton btn = (MaterialButton) child;
+                    btn.setEnabled(false);
+                    btn.setText("Загрузка...");
+                }
+            }
+        });
+
+        new Thread(() -> {
+            List<CatalogItem> found = new ArrayList<>();
+            String error = null;
+            try {
+                String xml = get(nextPageUrl);
+                found = parseCatalog(xml, nextPageUrl);
+            } catch (Exception e) {
+                error = e.getMessage();
+                android.util.Log.e("Flibusta", "NextPage Error", e);
+            }
+
+            final List<CatalogItem> result = found;
+            final String err = error;
+
+            runOnUiThread(() -> {
+                if (err != null)
+                    Toast.makeText(this, "Ошибка загрузки: " + err, Toast.LENGTH_SHORT).show();
+                else if (result != null && !result.isEmpty()) {
+                    int startIndex = items.size();
+                    items.addAll(result);
+                    for (int i = 0; i < result.size(); i++)
+                        addItemRow(startIndex + i, result.get(i));
+                }
+                updatePaginationButtons();
+            });
+        }).start();
+    }
+
+    private void updatePaginationButtons() {
+        runOnUiThread(() -> {
+            List<View> buttonsToRemove = new ArrayList<>();
+            for (int i = 0; i < resultsBox.getChildCount(); i++) {
+                View child = resultsBox.getChildAt(i);
+                if (child instanceof MaterialButton) {
+                    String tag = (String) child.getTag();
+                    if ("LOAD_MORE".equals(tag) || "LOAD_PREV".equals(tag))
+                        buttonsToRemove.add(child);
+                }
+            }
+            for (View view : buttonsToRemove) resultsBox.removeView(view);
+
+            int margin = dpToPx(16);
+
+            if (nextPageUrl != null && !nextPageUrl.isEmpty()) {
+                MaterialButton loadMoreBtn = new MaterialButton(this);
+                loadMoreBtn.setTag("LOAD_MORE");
+                loadMoreBtn.setText("Загрузить еще →");
+                loadMoreBtn.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                ((LinearLayout.LayoutParams) loadMoreBtn.getLayoutParams()).topMargin = margin;
+                ((LinearLayout.LayoutParams) loadMoreBtn.getLayoutParams()).bottomMargin = margin;
+                loadMoreBtn.setOnClickListener(v -> loadNextPage());
+                resultsBox.addView(loadMoreBtn);
+            }
+        });
+    }
+
+    // === СЕТЬ И ПОВТОРЫ ===
 
     private boolean isNetworkError(Exception e) {
         if (e instanceof java.net.SocketTimeoutException) return true;
@@ -402,7 +469,6 @@ public class MainActivity extends Activity {
     private void startRetry(final String url, final boolean isAuthorSearch, final String modeText) {
         isRetrying = true;
         isRetryCancelled = false;
-
         runOnUiThread(() -> {
             setResetButtonToCancel();
             connection.setText("Таймаут. Повторная попытка...");
@@ -410,29 +476,20 @@ public class MainActivity extends Activity {
 
         retryThread = new Thread(() -> {
             int delay = 3000;
-
             while (!isRetryCancelled && !isFinishing()) {
                 try {
                     Thread.sleep(delay);
                     if (isRetryCancelled) break;
-
                     delay = Math.min(delay + 2000, 15000);
                     final int attempt = (delay - 3000) / 2000 + 1;
-
                     int finalDelay = delay;
                     runOnUiThread(() -> {
                         if (!isRetrying) return;
-                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay /1000) + " сек...");
+                        connection.setText("Таймаут. Попытка #" + attempt + " через " + (finalDelay / 1000) + " сек...");
                     });
 
                     String xml = get(url);
-                    List<CatalogItem> found;
-                    if (isAuthorSearch) {
-                        found = parseAuthorsFromSearch(xml, url);
-                    } else {
-                        found = parseCatalog(xml, url);
-                    }
-
+                    List<CatalogItem> found = isAuthorSearch ? parseAuthorsFromSearch(xml, url) : parseCatalog(xml, url);
                     final List<CatalogItem> result = found;
                     runOnUiThread(() -> {
                         isRetrying = false;
@@ -440,24 +497,16 @@ public class MainActivity extends Activity {
                         showResults(result, null);
                     });
                     return;
-
                 } catch (InterruptedException e) {
                     break;
-                } catch (Exception e) {
-                    // Ошибка сети, продолжаем цикл
-                }
+                } catch (Exception e) { /* retry */ }
             }
-
             runOnUiThread(() -> {
                 isRetrying = false;
                 setResetButtonToReset();
                 progress.setVisibility(View.GONE);
                 findButton.setEnabled(true);
-                if (isRetryCancelled) {
-                    connection.setText("Поиск отменен");
-                } else {
-                    connection.setText(connected ? "Подключено" : "Нет соединения");
-                }
+                connection.setText(isRetryCancelled ? "Поиск отменен" : (connected ? "Подключено" : "Нет соединения"));
             });
         });
         retryThread.start();
@@ -467,7 +516,6 @@ public class MainActivity extends Activity {
         isRetryCancelled = true;
         if (retryThread != null) retryThread.interrupt();
         isRetrying = false;
-
         runOnUiThread(() -> {
             setResetButtonToReset();
             progress.setVisibility(View.GONE);
@@ -497,41 +545,45 @@ public class MainActivity extends Activity {
             resetButton.setEnabled(true);
             connection.setText(connected ? "Подключено к flibusta.is" : "Нет соединения");
 
-            if (error != null) {
-                addMessage("Ошибка: " + error);
-            } else if (result == null || result.isEmpty()) {
-                addMessage("Пусто.");
-            } else {
+            if (error != null) addMessage("Ошибка: " + error);
+            else if (result == null || result.isEmpty()) addMessage("Пусто.");
+            else {
                 items.addAll(result);
                 for (int i = 0; i < items.size(); i++) addItemRow(i, items.get(i));
             }
+            updatePaginationButtons();
         });
     }
+
+    // === ПАРСЕРЫ ===
 
     private List<CatalogItem> parseAuthorsFromSearch(String xml, String baseUrl) throws Exception {
         List<CatalogItem> out = new ArrayList<>();
         XmlPullParser p = XmlPullParserFactory.newInstance().newPullParser();
         p.setInput(new java.io.StringReader(xml));
-
         CatalogItem current = null;
         StringBuilder value = new StringBuilder();
 
         while (p.next() != XmlPullParser.END_DOCUMENT) {
             int event = p.getEventType();
             if (event == XmlPullParser.START_TAG) {
+                if ("link".equals(p.getName()) && current == null) {
+                    String rel = p.getAttributeValue(null, "rel");
+                    String href = p.getAttributeValue(null, "href");
+                    if (href != null) {
+                        String absolute = new URL(new URL(baseUrl), href).toString();
+                        if ("next".equals(rel)) nextPageUrl = absolute;
+                    }
+                }
                 if ("entry".equals(p.getName())) current = new CatalogItem();
-
                 if (current != null && "link".equals(p.getName())) {
                     String href = p.getAttributeValue(null, "href");
                     String rel = p.getAttributeValue(null, "rel");
                     if (href != null) {
                         String absolute = new URL(new URL(baseUrl), href).toString();
-                        if (absolute.contains("/ia/") || (rel != null && rel.contains("image"))) {
+                        if (absolute.contains("/ia/") || (rel != null && rel.contains("image")))
                             current.cover = absolute;
-                        }
-                        if (absolute.contains("/opds/author/")) {
-                            current.navUrl = absolute;
-                        }
+                        if (absolute.contains("/opds/author/")) current.navUrl = absolute;
                     }
                 }
             } else if (event == XmlPullParser.TEXT) {
@@ -558,7 +610,6 @@ public class MainActivity extends Activity {
         List<CatalogItem> out = new ArrayList<>();
         XmlPullParser p = XmlPullParserFactory.newInstance().newPullParser();
         p.setInput(new java.io.StringReader(xml));
-
         CatalogItem current = null;
         StringBuilder value = new StringBuilder();
 
@@ -566,6 +617,16 @@ public class MainActivity extends Activity {
             int event = p.getEventType();
             if (event == XmlPullParser.START_TAG) {
                 String tag = p.getName();
+
+                if ("link".equals(tag) && current == null) {
+                    String rel = p.getAttributeValue(null, "rel");
+                    String href = p.getAttributeValue(null, "href");
+                    if (href != null) {
+                        String absolute = new URL(new URL(baseUrl), href).toString();
+                        if ("next".equals(rel)) nextPageUrl = absolute;
+                    }
+                }
+
                 value.setLength(0);
                 if ("entry".equals(tag)) current = new CatalogItem();
 
@@ -576,54 +637,38 @@ public class MainActivity extends Activity {
 
                     if (href != null) {
                         String absolute = new URL(new URL(baseUrl), href).toString();
-
-                        if ((rel != null && rel.contains("image")) || (type != null && type.startsWith("image/"))) {
+                        if ((rel != null && rel.contains("image")) || (type != null && type.startsWith("image/")))
                             current.cover = absolute;
-                        }
 
                         if (rel != null && rel.contains("acquisition")) {
                             String lowerType = type == null ? "" : type.toLowerCase();
                             String lowerHref = absolute.toLowerCase();
-
                             if (lowerType.contains("epub") || lowerHref.contains(".epub")) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
-                            }
-                            else if (current.downloadUrl.isEmpty() && (lowerType.contains("fb2") || lowerHref.contains(".fb2") || lowerType.contains("zip"))) {
+                            } else if (current.downloadUrl.isEmpty() && (lowerType.contains("fb2") || lowerHref.contains(".fb2") || lowerType.contains("zip"))) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            } else if (current.downloadUrl.isEmpty() && lowerType.contains("mobi")) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            } else if (current.downloadUrl.isEmpty() && lowerType.contains("pdf")) {
+                                current.downloadUrl = absolute;
+                                current.mimeType = lowerType;
+                            } else if (current.downloadUrl.isEmpty()) {
                                 current.downloadUrl = absolute;
                                 current.mimeType = lowerType;
                             }
-                            else if (current.downloadUrl.isEmpty() && lowerType.contains("mobi")) {
-                                current.downloadUrl = absolute;
-                                current.mimeType = lowerType;
-                            }
-                            else if (current.downloadUrl.isEmpty() && lowerType.contains("pdf")) {
-                                current.downloadUrl = absolute;
-                                current.mimeType = lowerType;
-                            }
-                            else if (current.downloadUrl.isEmpty()) {
-                                current.downloadUrl = absolute;
-                                current.mimeType = lowerType;
-                            }
-
                             current.isBook = true;
                             current.isFolder = false;
                         }
 
                         if (!current.isBook) {
                             boolean isNavLink = false;
-                            if (rel != null) {
-                                if (rel.contains("subsection") || rel.contains("collection") ||
-                                        rel.contains("http://opds-spec.org/sort") ||
-                                        rel.contains("http://www.feedbooks.com/opds/facet")) {
-                                    isNavLink = true;
-                                }
-                            }
-                            if (absolute.contains("/opds/author/") ||
-                                    absolute.contains("/opds/authorsequences/") ||
-                                    absolute.contains("/opds/authorsequenceless/")) {
+                            if (rel != null && (rel.contains("subsection") || rel.contains("collection") || rel.contains("http://opds-spec.org/sort") || rel.contains("http://www.feedbooks.com/opds/facet")))
                                 isNavLink = true;
-                            }
+                            if (absolute.contains("/opds/author/") || absolute.contains("/opds/authorsequences/") || absolute.contains("/opds/authorsequenceless/"))
+                                isNavLink = true;
                             if (isNavLink && current.navUrl.isEmpty()) {
                                 current.navUrl = absolute;
                                 current.isFolder = true;
@@ -638,16 +683,13 @@ public class MainActivity extends Activity {
                 if (current != null) {
                     String v = value.toString().trim();
                     if ("title".equals(closing) && current.title.isEmpty()) current.title = v;
-                    else if ("name".equals(closing) && current.subtitle.isEmpty()) current.subtitle = v;
-                    else if (("summary".equals(closing) || "content".equals(closing)) && current.description.isEmpty()) {
+                    else if ("name".equals(closing) && current.subtitle.isEmpty())
+                        current.subtitle = v;
+                    else if (("summary".equals(closing) || "content".equals(closing)) && current.description.isEmpty())
                         current.description = v;
-                    }
                     else if ("entry".equals(closing)) {
-                        if (!current.title.isEmpty()) {
-                            if (current.isBook || !current.navUrl.isEmpty()) {
-                                out.add(current);
-                            }
-                        }
+                        if (!current.title.isEmpty() && (current.isBook || !current.navUrl.isEmpty()))
+                            out.add(current);
                         current = null;
                     }
                 }
@@ -656,21 +698,20 @@ public class MainActivity extends Activity {
         return out;
     }
 
+    // === УТИЛИТЫ ===
+
     private String get(String urlString) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(urlString).openConnection();
         c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
         c.setConnectTimeout(10000);
         c.setReadTimeout(10000);
-
         int responseCode = c.getResponseCode();
         InputStream in = (responseCode >= 200 && responseCode < 300) ? c.getInputStream() : c.getErrorStream();
         if (in == null) throw new Exception("Ошибка сервера: " + responseCode);
-
         java.util.Scanner s = new java.util.Scanner(in, "UTF-8").useDelimiter("\\A");
         String result = s.hasNext() ? s.next() : "";
         s.close();
         c.disconnect();
-
         if (result.contains("<html>")) throw new Exception("Получен HTML вместо XML");
         return result;
     }
@@ -690,12 +731,7 @@ public class MainActivity extends Activity {
 
     private void addItemRow(int index, CatalogItem item) {
         if (resultsBox == null) return;
-
-        int[] attrs = {
-                com.google.android.material.R.attr.colorOnSurface,
-                com.google.android.material.R.attr.colorOnSurfaceVariant,
-                com.google.android.material.R.attr.colorPrimary
-        };
+        int[] attrs = {com.google.android.material.R.attr.colorOnSurface, com.google.android.material.R.attr.colorOnSurfaceVariant, com.google.android.material.R.attr.colorPrimary};
         TypedArray ta = obtainStyledAttributes(attrs);
         int colorPrimary = ta.getColor(0, Color.BLACK);
         int colorSecondary = ta.getColor(1, Color.DKGRAY);
@@ -708,9 +744,7 @@ public class MainActivity extends Activity {
         card.setChecked(false);
         card.setStrokeWidth(0);
         card.setStrokeColor(colorAccent);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, 16);
         card.setLayoutParams(params);
 
@@ -721,10 +755,8 @@ public class MainActivity extends Activity {
         inner.setGravity(Gravity.CENTER_VERTICAL);
 
         ImageView iconView = new ImageView(this);
-
         int width = dpToPx(item.isFolder ? 48 : 80);
         int height = dpToPx(item.isFolder ? 48 : 120);
-
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(width, height);
         iconParams.setMargins(0, 0, dpToPx(16), 0);
         iconView.setLayoutParams(iconParams);
@@ -763,9 +795,8 @@ public class MainActivity extends Activity {
         subtitle.setEllipsize(TextUtils.TruncateAt.END);
 
         TextView desc = new TextView(this);
-        if (item.description != null && !item.description.isEmpty()) {
+        if (item.description != null && !item.description.isEmpty())
             desc.setText(Html.fromHtml(item.description, Html.FROM_HTML_MODE_LEGACY).toString().replaceAll("\\s+", " ").trim());
-        }
         desc.setTextSize(12);
         desc.setTextColor(colorSecondary);
         desc.setMaxLines(3);
@@ -779,14 +810,12 @@ public class MainActivity extends Activity {
         inner.addView(textContainer);
         card.addView(inner);
 
-        if (!item.isFolder && item.cover != null && !item.cover.isEmpty()) {
+        if (!item.isFolder && item.cover != null && !item.cover.isEmpty())
             loadCoverImage(iconView, item.cover);
-        }
 
         card.setOnClickListener(v -> {
-            if (item.isFolder || item.isAuthor) {
-                navigateTo(item.navUrl, item.title);
-            } else if (item.isBook) {
+            if (item.isFolder || item.isAuthor) navigateTo(item.navUrl, item.title);
+            else if (item.isBook) {
                 selected = index;
                 downloadButton.setEnabled(!item.downloadUrl.isEmpty());
                 for (int i = 0; i < resultsBox.getChildCount(); i++) {
@@ -799,7 +828,6 @@ public class MainActivity extends Activity {
                 }
             }
         });
-
         resultsBox.addView(card);
     }
 
@@ -815,46 +843,35 @@ public class MainActivity extends Activity {
                 is.close();
                 connection.disconnect();
                 if (bitmap != null) runOnUiThread(() -> imageView.setImageBitmap(bitmap));
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }).start();
     }
 
     private void downloadSelected() {
         if (selected < 0 || selected >= items.size()) return;
         CatalogItem item = items.get(selected);
-
         if (item.downloadUrl.isEmpty()) {
             Toast.makeText(this, "Нет ссылки для скачивания", Toast.LENGTH_LONG).show();
             return;
         }
-
         try {
             DownloadManager.Request r = new DownloadManager.Request(Uri.parse(item.downloadUrl));
             r.setTitle(item.title);
             r.setDescription("Загрузка с Flibusta");
             r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-
             String ext = ".fb2";
             String lowerUrl = item.downloadUrl.toLowerCase();
             String lowerMime = item.mimeType.toLowerCase();
-
-            if (lowerMime.contains("epub") || lowerUrl.contains(".epub")) {
-                ext = ".epub";
-            } else if (lowerMime.contains("mobi") || lowerUrl.contains(".mobi")) {
-                ext = ".mobi";
-            } else if (lowerMime.contains("pdf") || lowerUrl.contains(".pdf")) {
-                ext = ".pdf";
-            } else if (lowerMime.contains("zip") || lowerMime.contains("fb2")) {
-                ext = ".fb2";
-            }
-
+            if (lowerMime.contains("epub") || lowerUrl.contains(".epub")) ext = ".epub";
+            else if (lowerMime.contains("mobi") || lowerUrl.contains(".mobi")) ext = ".mobi";
+            else if (lowerMime.contains("pdf") || lowerUrl.contains(".pdf")) ext = ".pdf";
+            else if (lowerMime.contains("zip") || lowerMime.contains("fb2")) ext = ".fb2";
             String safeTitle = item.title.replaceAll("[/:*?\"<>|]", "_").trim();
             if (safeTitle.length() > 90) safeTitle = safeTitle.substring(0, 90);
-
             r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, safeTitle + ext);
             r.setAllowedOverMetered(true);
             r.setAllowedOverRoaming(true);
-
             ((DownloadManager) getSystemService(DOWNLOAD_SERVICE)).enqueue(r);
             Toast.makeText(this, "Загрузка началась. Файл появится в Downloads.", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
