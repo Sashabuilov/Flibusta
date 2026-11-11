@@ -20,13 +20,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.inputmethod.InputMethodManager;
-
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
-
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -34,13 +32,12 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 public class MainActivity extends Activity {
-    private static final String BASE = "http://flibusta.is";
 
+    private static final String BASE = "http://flibusta.is";
     private TextInputEditText query;
     private MaterialSwitch modeSwitch;
     private TextView booksLabel, authorsLabel;
@@ -48,25 +45,18 @@ public class MainActivity extends Activity {
     private LinearProgressIndicator progress;
     private TextView connection, headerTitle;
     private LinearLayout resultsBox, navHeader;
-
     private final List<CatalogItem> items = new ArrayList<>();
     private int selected = -1;
     private volatile boolean connected = false;
-
     private volatile boolean isRetrying = false;
     private volatile boolean isRetryCancelled = false;
     private Thread retryThread = null;
-
     private final Stack<NavState> navStack = new Stack<>();
-
     private String currentUrl = null;
     private String currentTitle = null;
     private String currentQueryText = null;
     private String currentModeText = null;
-
-    // Пагинация
     private String nextPageUrl = null;
-    //private String prevPageUrl = null;
 
     static class NavState {
         String url;
@@ -81,7 +71,6 @@ public class MainActivity extends Activity {
             this.modeText = modeText;
         }
     }
-
     static class CatalogItem {
         String title = "";
         String subtitle = "";
@@ -91,17 +80,18 @@ public class MainActivity extends Activity {
         String downloadUrl = "";
         String mimeType = "";
         String navUrl = "";
-
         boolean isBook = false;
         boolean isAuthor = false;
         boolean isFolder = false;
     }
-
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_main);
-
+        this.initUI();
+        connectLoop();
+    }
+    private void initUI() {
         query = findViewById(R.id.query);
         modeSwitch = findViewById(R.id.mode);
         booksLabel = findViewById(R.id.booksLabel);
@@ -140,10 +130,7 @@ public class MainActivity extends Activity {
         downloadButton.setOnClickListener(v -> downloadSelected());
 
         if (backButton != null) backButton.setOnClickListener(v -> goBack());
-
-        connectLoop();
     }
-
     private void updateModeLabels(boolean isAuthorsMode) {
         if (isAuthorsMode) {
             booksLabel.setTextColor(getThemeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
@@ -157,17 +144,14 @@ public class MainActivity extends Activity {
             authorsLabel.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
     }
-
     private int getThemeColor(int attr) {
         TypedValue typedValue = new TypedValue();
         getTheme().resolveAttribute(attr, typedValue, true);
         return typedValue.data;
     }
-
     private String getModeText() {
         return modeSwitch.isChecked() ? "Авторы" : "Книги";
     }
-
     private void goBack() {
         if (isRetrying) cancelRetry();
 
@@ -210,7 +194,6 @@ public class MainActivity extends Activity {
             }
         }
     }
-
     private void resetSearch() {
         if (isRetrying) cancelRetry();
 
@@ -235,7 +218,6 @@ public class MainActivity extends Activity {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null && query != null) imm.hideSoftInputFromWindow(query.getWindowToken(), 0);
     }
-
     private void connectLoop() {
         new Thread(() -> {
             int attempt = 0;
@@ -253,7 +235,8 @@ public class MainActivity extends Activity {
                         connected = true;
                     }
                     c.disconnect();
-                } catch (Exception ignored) {
+                }
+                catch (Exception ignored) {
                 }
 
                 int finalAttempt = attempt;
@@ -272,7 +255,6 @@ public class MainActivity extends Activity {
             }
         }).start();
     }
-
     private void search() {
         if (query == null) return;
         String q = query.getText() != null ? query.getText().toString().trim() : "";
@@ -295,7 +277,6 @@ public class MainActivity extends Activity {
 
         performSearchInternal(q, getModeText());
     }
-
     private void performSearchInternal(String queryText, String modeText) {
         currentQueryText = queryText;
         currentModeText = modeText;
@@ -333,7 +314,6 @@ public class MainActivity extends Activity {
             showResults(found, error);
         }).start();
     }
-
     private void navigateTo(String url, String title) {
         NavState current = (currentUrl != null) ? new NavState(currentUrl, currentTitle, null, null) : new NavState(null, null, currentQueryText, currentModeText);
         navStack.push(current);
@@ -350,7 +330,6 @@ public class MainActivity extends Activity {
         }
         loadUrl(url);
     }
-
     private void loadUrl(String url) {
         findButton.setEnabled(false);
         resetButton.setEnabled(true);
@@ -380,9 +359,6 @@ public class MainActivity extends Activity {
             showResults(found, error);
         }).start();
     }
-
-    // === ПАГИНАЦИЯ ===
-
     private void loadNextPage() {
         if (nextPageUrl == null || nextPageUrl.isEmpty()) return;
 
@@ -424,7 +400,6 @@ public class MainActivity extends Activity {
             });
         }).start();
     }
-
     private void updatePaginationButtons() {
         runOnUiThread(() -> {
             List<View> buttonsToRemove = new ArrayList<>();
@@ -452,9 +427,7 @@ public class MainActivity extends Activity {
             }
         });
     }
-
     // === СЕТЬ И ПОВТОРЫ ===
-
     private boolean isNetworkError(Exception e) {
         if (e instanceof java.net.SocketTimeoutException) return true;
         if (e instanceof java.net.UnknownHostException) return true;
@@ -465,7 +438,6 @@ public class MainActivity extends Activity {
         }
         return false;
     }
-
     private void startRetry(final String url, final boolean isAuthorSearch, final String modeText) {
         isRetrying = true;
         isRetryCancelled = false;
@@ -511,7 +483,6 @@ public class MainActivity extends Activity {
         });
         retryThread.start();
     }
-
     private void cancelRetry() {
         isRetryCancelled = true;
         if (retryThread != null) retryThread.interrupt();
@@ -523,21 +494,18 @@ public class MainActivity extends Activity {
             connection.setText("Поиск отменен");
         });
     }
-
     private void setResetButtonToCancel() {
         if (resetButton != null) {
             resetButton.setText("Отмена");
             resetButton.setIconResource(android.R.drawable.ic_menu_close_clear_cancel);
         }
     }
-
     private void setResetButtonToReset() {
         if (resetButton != null) {
             resetButton.setText("Сбросить");
             resetButton.setIconResource(android.R.drawable.ic_menu_close_clear_cancel);
         }
     }
-
     private void showResults(List<CatalogItem> result, String error) {
         runOnUiThread(() -> {
             progress.setVisibility(View.GONE);
@@ -554,9 +522,7 @@ public class MainActivity extends Activity {
             updatePaginationButtons();
         });
     }
-
     // === ПАРСЕРЫ ===
-
     private List<CatalogItem> parseAuthorsFromSearch(String xml, String baseUrl) throws Exception {
         List<CatalogItem> out = new ArrayList<>();
         XmlPullParser p = XmlPullParserFactory.newInstance().newPullParser();
@@ -605,7 +571,6 @@ public class MainActivity extends Activity {
         }
         return out;
     }
-
     private List<CatalogItem> parseCatalog(String xml, String baseUrl) throws Exception {
         List<CatalogItem> out = new ArrayList<>();
         XmlPullParser p = XmlPullParserFactory.newInstance().newPullParser();
@@ -697,9 +662,7 @@ public class MainActivity extends Activity {
         }
         return out;
     }
-
     // === УТИЛИТЫ ===
-
     private String get(String urlString) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(urlString).openConnection();
         c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
@@ -715,7 +678,6 @@ public class MainActivity extends Activity {
         if (result.contains("<html>")) throw new Exception("Получен HTML вместо XML");
         return result;
     }
-
     private void addMessage(String msg) {
         if (resultsBox == null) return;
         TextView tv = new TextView(this);
@@ -724,11 +686,9 @@ public class MainActivity extends Activity {
         tv.setTextColor(Color.parseColor("#757575"));
         resultsBox.addView(tv);
     }
-
     private int dpToPx(int dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
-
     private void addItemRow(int index, CatalogItem item) {
         if (resultsBox == null) return;
         int[] attrs = {com.google.android.material.R.attr.colorOnSurface, com.google.android.material.R.attr.colorOnSurfaceVariant, com.google.android.material.R.attr.colorPrimary};
@@ -830,7 +790,6 @@ public class MainActivity extends Activity {
         });
         resultsBox.addView(card);
     }
-
     private void loadCoverImage(ImageView imageView, String url) {
         new Thread(() -> {
             try {
@@ -847,7 +806,6 @@ public class MainActivity extends Activity {
             }
         }).start();
     }
-
     private void downloadSelected() {
         if (selected < 0 || selected >= items.size()) return;
         CatalogItem item = items.get(selected);
